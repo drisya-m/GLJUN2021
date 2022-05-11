@@ -15,7 +15,7 @@
 
 ## Coding Choices
 
-- Language: `python`
+- Language: `python` (`3.10`)
 - Patterns: `OOPS` and `SOLID` based
 - Diagram Tool: `draw.io` (XML Format)
 - Logging Format: `json`
