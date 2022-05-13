@@ -1,0 +1,98 @@
+=== Technical Requirements
+---
+
+ * Each entity (`taxi` and `user`) MUST have a `Location`
+ * Each Location will have two attributes [Longitude (Decimal), Latitude (Decimal)]
+   ** Precision of 2 Digits
+ * World will be a Rectangular Area with Origin as (0.00, 0.00), each client will
+   know of the Upper Bound [MAX_LONG, MAX_LAT]
+ * Each entity will randomly choose a Starting Location within the bounds
+    ** Longitude: [0.00, MAX_LONG]
+    ** Latitude: [0.00, MAX_LAT]
+ * Taxis can move with `delta` of (`0.01`) per update. Given a current location of Taxi as
+    (X,Y) the next update could one of these
+      (X,Y) | (X+-0.01, Y) | (X, Y+- 0.01) | (X+-0.01,Y+0.01)
+    ** `Note:` Find a Distribution Curve that can generate the next location!!
+ * Location of user should not be reported or tracked
+ * User will send its location with each Taxi Request!!
+   ** Advanced: We can also send Destination Location to optimize the next Taxi
+   ** Once User board the Taxi, Taxi location becomes Location of User
+
+=== Architectural Design
+---
+
+ * Whole solution has three components:
+  ** `taxi-client`: Client code that runs on a taxi
+  ** `user-client`: Client code that runs on a user
+  ** `server`: Code running on server that serves user requests
+ * Design Diagram: https://whimsical.com/architecture-LgrJ9vwSJVAuornmzzGkGU
+ *
+
+
+=== Component: Taxi
+---
+
+ * Premises
+  ** Taxi will know the `server` address (`HTTP` location)
+  ** Taxi will know the world co-ordinate limits (given as configuration)
+  ** Taxi will be the initiator of communication with server
+ * Each `taxi` object will have below attributes
+  ** `id <string>`: A unique identifier assigned by `server`
+  ** `location <point>`: Current location co-ordinate point within world bounds
+  ** `type <string>`: Type/Class of taxi reported by taxi
+ * Communication flow with `server`
+  ** Taxi first registers itself with the server and get assigned its `id`
+  ** Server records the `type` of the Taxi when registering the taxi
+  ** For further communication with server, taxi uses its `id` to identify itself
+
+=== Component: User
+---
+
+ * Premises
+  ** User will know the `server` address (`HTTP` location)
+  ** User will know the world co-ordinate limits (given as configuration)
+  ** User will be the initiator of communication with server
+ * Each `user` object will have below attributes
+  ** `id <string>`: A unique identifier assigned by `server`
+  ** `name <string>`: Display name choosen by User
+  ** `location <point>`: Current location co-ordinate point within world bounds
+ * Communication flow with `server`
+  ** User first registers itself with the server and get assigned its `id`
+  ** For further communication with server, user uses its `id` to identify itself
+
+=== Envelope Computations
+---
+
+ - Total number of Taxi:
+
+
+
+=== Flows
+---
+
+We enlist the possible execution flows which are representation of real world use cases
+
+ - Taxi Registration
+ - User Registration
+ - Taxi Location Reporting
+ - User: Taxi Request & Confirmation
+ - Taxi: Pickup Request & Confirmation
+
+
+
+  * Each user will have these attributes: Name, Id
+  * User needs to register before making a Request
+  * User will know of its Id before making a Request
+  * Each user simply sends a Request for a taxi with its Current Location
+  * Destination Location is not needed in computation for now!
+
+- Server will do these things
+  * Expose an MQTT Endpoint to consume Taxi communication [Discussed+Kind of decided]
+  * Expose an Endpoint to consume User communication [ReST over HTTPS with a YES/NO answer with longer timeout]
+  * Computation Logic for all use cases [Scalability headaches need to be taken]
+
+
+
+
+
+
