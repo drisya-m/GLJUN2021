@@ -1,8 +1,7 @@
 :toc:
 
----
 == Envelope Calculations Per Cluster
----
+
 
 * Taxi
     - Number of Taxi Registered: 200,000
@@ -18,7 +17,6 @@
     - SLA Peak Load: Taxi Lookup under 120 seconds
 
 == Architecture Designs
----
 
 {nbsp}
 
@@ -127,3 +125,40 @@ request is validated, the taxi entry is removed from _status data_ and exlusive 
 further location updates will be then discarded.
 
 
+=== `API: Taxi Booking`
+
+image::img/flow_taxi_booking.png[]
+
+Once a user successfully registers with system, it gets an `Id` and a `Token`. Using these two, user can start booking
+taxi from system. The flow goes like below;
+
+1. User makes a `POST /taxi-request` call with below structure;
+  - `user_id` as a Header
+  - `jwt` as a Header
+  - JSON Payload as the formulated JWT Payload
+
+   {
+     "user_id": "<string:id>",
+     "expiry": <int:epoch>,
+     "nonce": "<string:random>",
+     "location" : {
+        "longitude": "<decimal:long>",
+        "latidude": "<decimal:lat>"
+     }
+   }
+
+2. Request is received by API Gateway endpoint and is validated by an authentication lambda. Then it is routed to a
+   Taxi Request Lambda
+3. Lambda validates the location and fires `nearest K` query on _Geo Spatial Data_ which outputs upto `K` taxi `Id`
+4. Lambda then iterates over each `taxi-id` and sends a pickup request to the taxi client over the exclusive taxi channel
+5. If the Taxi responds within a stipulated time limit, we consider the response, else the request is considered as
+   timed out. A taxi client may send a rejection in case it is already running a trip or taxi driver cancelled it or if
+   client has logged off. In such cases of rejection, we send the request to next available taxi
+6. In case of timeout, a taxi may be considered as unreachable or delayed network, in such case the response may be
+   considered if no one else accepted the request
+7. When the accepting confirmation arrives within time limit, taxi can be assigned the trip
+8. Taxi status is updated with the trip in progress flag and trip id
+9. Connection is closed indicating request service complete. In case no taxi was assigned, user can retry after sometime
+
+Trip information is stored in _status data_ against user and taxi so that we do not assigned any other trip to taxi or
+user.
