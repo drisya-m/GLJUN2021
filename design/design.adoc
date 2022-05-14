@@ -1,98 +1,129 @@
-=== Technical Requirements
+:toc:
+
+---
+== Envelope Calculations Per Cluster
 ---
 
- * Each entity (`taxi` and `user`) MUST have a `Location`
- * Each Location will have two attributes [Longitude (Decimal), Latitude (Decimal)]
-   ** Precision of 2 Digits
- * World will be a Rectangular Area with Origin as (0.00, 0.00), each client will
-   know of the Upper Bound [MAX_LONG, MAX_LAT]
- * Each entity will randomly choose a Starting Location within the bounds
-    ** Longitude: [0.00, MAX_LONG]
-    ** Latitude: [0.00, MAX_LAT]
- * Taxis can move with `delta` of (`0.01`) per update. Given a current location of Taxi as
-    (X,Y) the next update could one of these
-      (X,Y) | (X+-0.01, Y) | (X, Y+- 0.01) | (X+-0.01,Y+0.01)
-    ** `Note:` Find a Distribution Curve that can generate the next location!!
- * Location of user should not be reported or tracked
- * User will send its location with each Taxi Request!!
-   ** Advanced: We can also send Destination Location to optimize the next Taxi
-   ** Once User board the Taxi, Taxi location becomes Location of User
+* Taxi
+    - Number of Taxi Registered: 200,000
+    - Number of Shifts: `3x16` Hours each
+    - Active Taxis Average: 2/3 x N = `130,000`
+    - Location Updates: 130,000/m = 130,000/60/second ~= `2100/sec`
 
-=== Architectural Design
+* Users
+    - Number of registered users: 10,00,000
+    - Peak Query: N/10 = 1,00,000/1 hour = 27.77/s ~= `30/sec`
+    - Average Load: N/10 = 1,00,000/day ~ `2/second`
+    - SLA Average Load: Taxi lookup under 60 seconds
+    - SLA Peak Load: Taxi Lookup under 120 seconds
+
+== Architecture Designs
 ---
 
- * Whole solution has three components:
-  ** `taxi-client`: Client code that runs on a taxi
-  ** `user-client`: Client code that runs on a user
-  ** `server`: Code running on server that serves user requests
- * Design Diagram: https://whimsical.com/architecture-LgrJ9vwSJVAuornmzzGkGU
- *
+{nbsp}
 
+There are three actors in whole project representing three real world entities.
 
-=== Component: Taxi
----
+1. _Server_: Cloud based application which handles all the business logic
+2. _Taxi_: A client that represents a taxi for hire. A registered taxi can receive pick up request nearby
+3. _User_: A client that represents a person who wants to hire a taxi for travel. A registered user can ask for an
+   available taxi nearby
 
- * Premises
-  ** Taxi will know the `server` address (`HTTP` location)
-  ** Taxi will know the world co-ordinate limits (given as configuration)
-  ** Taxi will be the initiator of communication with server
- * Each `taxi` object will have below attributes
-  ** `id <string>`: A unique identifier assigned by `server`
-  ** `location <point>`: Current location co-ordinate point within world bounds
-  ** `type <string>`: Type/Class of taxi reported by taxi
- * Communication flow with `server`
-  ** Taxi first registers itself with the server and get assigned its `id`
-  ** Server records the `type` of the Taxi when registering the taxi
-  ** For further communication with server, taxi uses its `id` to identify itself
+There are three distinct categories of communication between clients (user/taxi) and server.
 
-=== Component: User
----
+1. *_Synchronous Requests_*: These are requests by clients which requires immediate responses with blocking I/O. Example
+   of such requests are _login_, _logout_, _cancel_taxi_, _register_ and so on. Since these are less frequently used, it
+   makes sense to use simple _Client-Server_ Communication model here. A `ReST` Api over HTTPs is a good fit for these
+   requests.
+2. *_Long Term Continuous Communication_*: These are data exchanges which are extended over long time and are frequent
+   in nature. Message Queueing protocol `MQTT` based endpoint can serve data transfer between client and server for
+   these requests. Example data transfer could be _location update_ sent by taxi, _new user request_ assigned to a taxi,
+   _changes in ongoing ride_, _cancellation of a ride by user_ and so on.
+3. *_Short Term Continuous Communication_*: These are data exchanges which are done over short time and are frequent
+   in nature. A `WebSocket` based endpoint can serve data transfer between client and server for these requests. This
+   could be used for sending updates when a user _searches for taxi ride_. A user request can be kept live until a taxi
+   is assigned for user request.
 
- * Premises
-  ** User will know the `server` address (`HTTP` location)
-  ** User will know the world co-ordinate limits (given as configuration)
-  ** User will be the initiator of communication with server
- * Each `user` object will have below attributes
-  ** `id <string>`: A unique identifier assigned by `server`
-  ** `name <string>`: Display name choosen by User
-  ** `location <point>`: Current location co-ordinate point within world bounds
- * Communication flow with `server`
-  ** User first registers itself with the server and get assigned its `id`
-  ** For further communication with server, user uses its `id` to identify itself
+{nbsp}
 
-=== Envelope Computations
----
+=== `High Level Organization`
 
- - Total number of Taxi:
+image::img/high_level_architecture.png[]
 
+Below are the components that are used in the system design for serving different purposes. The components are numbered
+and are explained in natural order of the numbering.
 
+1. *API Gateway (ReST):* A HTTP endpoint that serves the synchronous requests to register a user or taxi in the system.
+   Requests are forwarded to a Lambda which internal does the required validations and creates a new entry in database.
+2. *MQTT Endpoint(s):* These are multiple MQTT based Topics that are exposed over internet. Each topic allows queue
+   based communication with a taxi. Since MQTT allows large number of clients to be subscribed, it becomes possible to
+   scale clients simply by adding more topics or partitions. Taxi sends location updates by publishing messages into one
+   of these _topics_. Also, taxi subscribes to an exclusive topic to send and read exclusive messages for it
+3. *API Gateway (WebSocket):* A HTTP Endpoint upgradeable to a WebSocket. It is used by user client to ask for a taxi
+   nearby. Since user is going to look for taxi for a few minutes, WebSocket will allow server to send timely updates to
+   user until a taxi is assigned for the request
+4. *SQS (Internal Queue):* Used within AWS to read messages from Taxi Topics and forwards them to required `lambda`
+   functions. Lambda function will perform business logic function to handle message correctly
+5. *Lambda Functions:* Used to perform logic on the request incoming from taxi or user
+6. *User Database:* Houses data for registered Users and Taxis along with some metadata. A document database like
+   _MongoDb_ or _DynamoDb_ would be an ideal candidate for these operations
+7. *GeoSpatial Data:* A DB or Cache that supports GeoSpatial queries. Possible candidates are MongoDb, ElastiCache or
+   Redis Cache
+8. *Status Data:* In-Memory cache that holds status for users, taxi and current rides
 
-=== Flows
----
+{nbsp}
 
-We enlist the possible execution flows which are representation of real world use cases
+=== `API: User/Taxi Registration`
 
- - Taxi Registration
- - User Registration
- - Taxi Location Reporting
- - User: Taxi Request & Confirmation
- - Taxi: Pickup Request & Confirmation
+image::img/flow_user_registration.png[]
 
+A user and taxi needs to be registered within the system to be able to use the service. In effect, _registration_ Api
+becomes the first interaction of user with the system. The flow goes like below
 
+ 1. User/Taxi makes a `HTTP POST` call to `/register` Api with JSON payload. Payload contains specific information
+    about a new user or taxi
+ 2. Request is recieved by API Gateway and is routed to a _register lambda_ function
+ 3. Register Lambda function does the validation for duplicates and integrity
+ 4. On validation success, a new record is made in the Mongo Db that will serve as a store for user and taxi
+ 5. A success response is sent back with assigned User Id and possibly a Token
 
-  * Each user will have these attributes: Name, Id
-  * User needs to register before making a Request
-  * User will know of its Id before making a Request
-  * Each user simply sends a Request for a taxi with its Current Location
-  * Destination Location is not needed in computation for now!
+On a _success_ response client is supposed to persist the data locally along with the assigned `Id`.
 
-- Server will do these things
-  * Expose an MQTT Endpoint to consume Taxi communication [Discussed+Kind of decided]
-  * Expose an Endpoint to consume User communication [ReST over HTTPS with a YES/NO answer with longer timeout]
-  * Computation Logic for all use cases [Scalability headaches need to be taken]
+_Extension Point:_ As part of payload, Client can send a Public Key that can be stored in Mongo Record. This Public Key,
+then becomes the basis for `JWT` based authentication.
 
+=== `API: Taxi Login`
 
+image::img/flow_taxi_login.png[]
 
+Once a taxi successfully registers with system, it gets an `Id` and a `Token`. Using these two taxi can start or stop
+getting pickup requests from system. The flow goes like below;
 
+1. Taxi makes a `POST /login` call with below structure;
+  - `taxi_id` as a Header
+  - `jwt` as a Header
+  - JSON Payload as the formulated JWT Payload
+  ``
+   {
+     "taxi_id": "<string:id>",
+     "expiry": <int:epoch>,
+     "nonce": "<string:random>"
+   }
+  ``
+2. Request is received by API Gateway endpoint and is validated by an authentication lambda. Then it is routed to a
+   Login Lambda
+3. Login Lambda validates the current status and updates the status data marking the taxi as available for new requests.
+   It then proceeds to create a Topic in format `topic/taxi-<id>` to enable one-to-one communication between server
+   and taxi
+4. Okay response is sent back to Taxi indicating a successful login for taxi
+5. Taxi client then subscribes to an exclusive topic `topic/taxi-<id>` to enable exclusive communication channel
+6. Taxi client then starts publishing periodic location messages onto the topic `topic/taxi-location`
+7. Location messages are served by a Location Lambda. A SQS Queue invokes Lambda for batches of MQTT messages. This
+   lambda first verifies that the Taxi is still logged in using status data
+8. If it is online, the current location is written into the _Geo Spatial Data_
+
+Once taxi wants to stop serving request, a `/logoff` Api call is made which is routed to same Login Lambda. Once the
+request is validated, the taxi entry is removed from _status data_ and exlusive topic `topic/taxi-<id>` is deleted. Any
+further location updates will be then discarded.
 
 
