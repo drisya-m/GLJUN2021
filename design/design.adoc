@@ -162,3 +162,70 @@ taxi from system. The flow goes like below;
 
 Trip information is stored in _status data_ against user and taxi so that we do not assigned any other trip to taxi or
 user.
+
+
+== Envelope Size Estimation: Taxi
+
+[source]
+----
+Taxi Mongo Record {
+ "id"  : "<string:128>",
+ "type": "<string:32>",
+ "registered_on": <epoch:8>,
+ "license_number": "<string:64>",
+ "manufacturer": "<string:64>",
+ "model": "<string:64>",
+ "driven_by": {
+   "name": "<string:256>",
+   "license": "<string:256>",
+   "expiry": <epoch:8>
+ },
+ "token": "<string:128>"
+}
+
+Taxi Location Records {
+ "last_update": <epoch:8>
+ "longitude": <float:8>
+ "latitude": <float:8>
+}
+
+Taxi Status Record {
+  "last_update": <epoch:8>
+  "logout_at": <epoch:8>,
+  "trip_id": <long:8>,
+}
+----
+
+* Taxi
+    - total=200,000; active=130,000
+    - Max Record Size: 1024 Bytes (1KB)
+    - Max Active Database Size: 200,000KB/ 200MB
+    - Max Status Size: 32B
+    - Max Cache Size: 130,000 x 32B / 4MB
+    - Peak Cache Memory Size: 200,000 x 32B / 6MB
+
+== Envelope Size Estimation: User
+
+[source]
+----
+User Mongo Record {
+ "id"  : "<string:128>",
+ "registered_on": <epoch:8>,
+ "gender": "<string:32>",
+ "contact": "<string:64>",
+ "address": "<string:64>",
+ "name": "<string:256>",
+ "token": "<string:128>"
+}
+
+User Trip Status Record {
+  "last_update": <epoch:8>
+  "trip_id": <long:8>,
+  "taxi_id": "<string:128>"
+}
+----
+
+* Users
+    - Number of registered users: 1000,000
+    - Cache Size Max: 200,000 * 144B/ 28MB
+    - Database Size: 680B * 1M / 680MB
