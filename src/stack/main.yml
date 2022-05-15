@@ -1,0 +1,18 @@
+Description: Master stack which creates all required nested stacks
+
+Parameters:
+  Namespace:
+    Type: String
+    Description: Namespace for resources
+  Bucket:
+    Type: String
+    Description: S3Bucket Name to use for files
+
+Resources:
+
+  SecurityStack:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: !Sub 'https://${Bucket}.s3.amazonaws.com/build/${Namespace}/stack/security.yml'
+      Parameters:
+        Namespace: !Ref Namespace

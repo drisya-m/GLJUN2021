@@ -1,0 +1,28 @@
+Description: Master stack which creates all required nested stacks
+
+Parameters:
+  Namespace:
+    Type: String
+    Description: Namespace for resources
+
+Resources:
+
+  LoginLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - String
+      RoleName: !Sub "${Namespace}-LoginLambda-Role"
+      Tags:
+        - Key: Namespace
+          Value: !Sub "${Namespace}"
