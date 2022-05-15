@@ -1,4 +1,4 @@
-Description: Master stack which creates all required nested stacks
+Description: Stack to create all security roles and policies
 
 Parameters:
   Namespace:
@@ -21,8 +21,88 @@ Resources:
               - 'sts:AssumeRole'
       Path: /
       ManagedPolicyArns:
-        - String
-      RoleName: !Sub "${Namespace}-LoginLambda-Role"
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      RoleName: !Sub "${Namespace}-Login-Lambda-Role"
+      Tags:
+        - Key: Namespace
+          Value: !Sub "${Namespace}"
+
+  LogoffLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      RoleName: !Sub "${Namespace}-Logoff-Lambda-Role"
+      Tags:
+        - Key: Namespace
+          Value: !Sub "${Namespace}"
+
+  FindTaxiLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      RoleName: !Sub "${Namespace}-FindTaxi-Lambda-Role"
+      Tags:
+        - Key: Namespace
+          Value: !Sub "${Namespace}"
+
+  CleanupLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      RoleName: !Sub "${Namespace}-Cleanup-Lambda-Role"
+      Tags:
+        - Key: Namespace
+          Value: !Sub "${Namespace}"
+
+  RegisterLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      RoleName: !Sub "${Namespace}-Register-Lambda-Role"
       Tags:
         - Key: Namespace
           Value: !Sub "${Namespace}"

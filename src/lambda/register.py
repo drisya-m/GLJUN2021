@@ -29,6 +29,6 @@ def respond(code: Optional[int], body=None, headers=None):
     }
 
 
-def lambda_handler(event, context):
+def handler(event, context):
     print(event)
     return respond(200, "hello world", {})

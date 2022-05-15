@@ -16,3 +16,13 @@ Resources:
       TemplateURL: !Sub 'https://${Bucket}.s3.amazonaws.com/build/${Namespace}/stack/security.yml'
       Parameters:
         Namespace: !Ref Namespace
+
+  LambdaStack:
+    Type: "AWS::CloudFormation::Stack"
+    DependsOn:
+     - SecurityStack
+    Properties:
+      TemplateURL: !Sub 'https://${Bucket}.s3.amazonaws.com/build/${Namespace}/stack/lambda.yml'
+      Parameters:
+        Namespace: !Ref Namespace
+        Bucket: !Ref Bucket

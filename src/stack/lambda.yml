@@ -1,0 +1,23 @@
+Description: Stack to create all lambda functions
+
+Parameters:
+  Namespace:
+    Type: String
+    Description: Namespace for resources
+  Bucket:
+    Type: String
+    Description: Containing source files
+
+Resources:
+  RegisterLambda:
+      Type: AWS::Lambda::Function
+      Properties:
+        FunctionName: !Sub "${Namespace}-Register-Function"
+        Runtime: python3.9
+        Handler: 'handler'
+        MemorySize: 128
+        Timeout: 10
+        Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/${Namespace}-Register-Lambda-Role"
+        Code:
+          S3Bucket: !Ref Bucket
+          S3Key: !Sub "build/${Namespace}/lambda/register.zip"
