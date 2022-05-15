@@ -53,21 +53,16 @@ and are explained in natural order of the numbering.
 
 1. *API Gateway (ReST):* A HTTP endpoint that serves the synchronous requests to register a user or taxi in the system.
    Requests are forwarded to a Lambda which internal does the required validations and creates a new entry in database.
-2. *MQTT Endpoint(s):* These are multiple MQTT based Topics that are exposed over internet. Each topic allows queue
-   based communication with a taxi. Since MQTT allows large number of clients to be subscribed, it becomes possible to
+2. *SNS Topic(s):* These SNS Topics that are exposed over internet. Each topic allows queue
+   based communication with a taxi. SNS allows large number of clients to be subscribed, it becomes possible to
    scale clients simply by adding more topics or partitions. Taxi sends location updates by publishing messages into one
    of these _topics_. Also, taxi subscribes to an exclusive topic to send and read exclusive messages for it
-3. *API Gateway (WebSocket):* A HTTP Endpoint upgradeable to a WebSocket. It is used by user client to ask for a taxi
-   nearby. Since user is going to look for taxi for a few minutes, WebSocket will allow server to send timely updates to
-   user until a taxi is assigned for the request
-4. *SQS (Internal Queue):* Used within AWS to read messages from Taxi Topics and forwards them to required `lambda`
-   functions. Lambda function will perform business logic function to handle message correctly
-5. *Lambda Functions:* Used to perform logic on the request incoming from taxi or user
-6. *User Database:* Houses data for registered Users and Taxis along with some metadata. A document database like
+3. *Lambda Functions:* Used to perform logic on the request incoming from taxi or user
+4. *User Database:* Houses data for registered Users and Taxis along with some metadata. A document database like
    _MongoDb_ or _DynamoDb_ would be an ideal candidate for these operations
-7. *GeoSpatial Data:* A DB or Cache that supports GeoSpatial queries. Possible candidates are MongoDb, ElastiCache or
+5. *GeoSpatial Data:* A DB or Cache that supports GeoSpatial queries. Possible candidates are MongoDb, ElastiCache or
    Redis Cache
-8. *Status Data:* In-Memory cache that holds status for users, taxi and current rides
+6. *Status Data:* In-Memory cache that holds status for users, taxi and current rides
 
 {nbsp}
 
@@ -150,15 +145,11 @@ taxi from system. The flow goes like below;
 2. Request is received by API Gateway endpoint and is validated by an authentication lambda. Then it is routed to a
    Taxi Request Lambda
 3. Lambda validates the location and fires `nearest K` query on _Geo Spatial Data_ which outputs upto `K` taxi `Id`
-4. Lambda then iterates over each `taxi-id` and sends a pickup request to the taxi client over the exclusive taxi channel
-5. If the Taxi responds within a stipulated time limit, we consider the response, else the request is considered as
-   timed out. A taxi client may send a rejection in case it is already running a trip or taxi driver cancelled it or if
-   client has logged off. In such cases of rejection, we send the request to next available taxi
-6. In case of timeout, a taxi may be considered as unreachable or delayed network, in such case the response may be
-   considered if no one else accepted the request
-7. When the accepting confirmation arrives within time limit, taxi can be assigned the trip
-8. Taxi status is updated with the trip in progress flag and trip id
-9. Connection is closed indicating request service complete. In case no taxi was assigned, user can retry after sometime
+4. Lambda then sends a pickup request to all nearest taxis via `taxi-<id>` topics
+5. The first positive response from the taxi is considered as a valid selection
+6. When the accepting confirmation arrives within time limit, taxi can be assigned the trip
+7. Taxi status is updated with the trip in progress flag and trip id
+8. Connection is closed indicating request service complete. In case no taxi was assigned, user can retry after sometime
 
 Trip information is stored in _status data_ against user and taxi so that we do not assigned any other trip to taxi or
 user.
