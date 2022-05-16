@@ -29,3 +29,7 @@ Resources:
       FunctionName: !Ref LocationLambdaArn
       Principal: sns.amazonaws.com
       SourceArn: !Ref LocationUpdateTopic
+
+Outputs:
+  TaxiLocationTopicArn:
+    Value: !Ref LocationUpdateTopic
