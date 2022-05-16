@@ -1,0 +1,171 @@
+== DATA MODEL & API CONTRACTS
+'''
+
+:toc:
+
+=== Model: Taxi
+
+[json]
+----
+collection=taxi_profile
+{
+    "_id": "Auto Generated Id",
+    "secret": "Server Assigned Secret",
+    "type": "taxi reported type (ALL IN UPPER CAPS)",
+    "name" : "driver name",
+    "license": "taxi number indexed (unique)"
+}
+----
+
+=== Model: User
+
+[json]
+----
+collection=user_profile
+{
+    "_id": "Auto Generated Id",
+    "secret": "Server Assigned Secret",
+    "name": "client reported user name (NO spaces)"
+}
+----
+
+=== Model: TaxiStatus
+
+[json]
+----
+collection=taxi_status
+{
+    "_id": "Auto Generated Id",
+    "taxi_id": "indexed taxi id (unique constraint)",
+    "location": {
+        "type": "Point",
+        "coordinates": [<float>, <float>]
+    },
+    "riding_with": "optional_user_id (unique, nullable, indexed)"
+}
+----
+
+=== Api Contract: Register User
+'''
+
+[source]
+----
+Request: POST /register
+Body : {
+    "type" : "user",
+    "name" : "JohnDoe"
+}
+
+Response: JSON
+{
+    "user_id": "string",
+    "secret": "for jwt"
+}
+----
+
+=== Api Contract: Register Taxi
+'''
+
+[source]
+----
+Request: POST /register
+Body : {
+    "type" : "taxi",
+    "name" : "taxi driver name",
+    "taxi" : {
+        "license": "unique number",
+        "type": "taxi class"
+    }
+}
+
+Response: JSON
+{
+    "taxi_id": "string",
+    "secret": "for jwt"
+}
+----
+
+=== Api Contract: Find Taxi
+'''
+
+[source]
+----
+Request: POST /findtaxi
+Header:
+ Token: <JWT>
+Body : {
+    "type" : "taxi type",
+    "location" : [<float>, <float>]
+}
+
+Response: JSON
+{
+    "taxi_id": "string",
+    "license": "number",
+    "name": "taxi driver name"
+}
+----
+
+=== Api Contract: Login | Logoff
+'''
+
+[source]
+----
+Request: POST /login | POST /logoff
+Header:
+ Token: <JWT>
+
+Response: 200 OK
+----
+
+
+=== SNS Payload: Taxi Location Update
+'''
+
+[source]
+----
+{
+    "type": "location_update",
+    "taxi_id": "taxi id",
+    "location": [<float>, <float>],
+    "token": "JWT"
+}
+----
+
+=== SNS Payload: Taxi Pickup Request
+'''
+
+[source]
+----
+{
+    "type": "pickup_request"
+    "user_id": "user id",
+    "location": [<float>, <float>]
+}
+----
+
+=== SNS Payload: Taxi Pickup Response
+'''
+
+[source]
+----
+{
+    "type": "pickup_response"
+    "user_id": "user id",
+    "response": <boolean>
+}
+----
+
+=== SNS Payload: Taxi Pickup Confirmation
+'''
+
+[source]
+----
+{
+    "type": "ride_confirmation"
+    "user_id": "user id",
+    "taxi_id": "taxi_id",
+    "ride_id": "ride_id"
+}
+----
+
