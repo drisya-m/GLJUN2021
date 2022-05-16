@@ -105,6 +105,25 @@ Resources:
               'headers': {},
             }
 
+  LocationLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${Namespace}-Location-Function"
+      Runtime: python3.9
+      Handler: 'index.handler'
+      MemorySize: 128
+      Timeout: 10
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/${Namespace}-Location-Lambda-Role"
+      Code:
+        ZipFile: |
+          def handler(event, context):
+            print('I am called')
+            return {
+              'statusCode': '200',
+              'body': 'hello world',
+              'headers': {},
+            }
+
 Outputs:
 
   LoginLambdaArn:
@@ -117,3 +136,6 @@ Outputs:
     Value: !GetAtt FindTaxiLambda.Arn
   CleanupLambdaArn:
     Value: !GetAtt CleanupLambda.Arn
+  LocationLambdaArn:
+    Value: !GetAtt LocationLambda.Arn
+
