@@ -1,0 +1,61 @@
+Description: Stack to create Api gateway
+
+Parameters:
+  Namespace:
+    Type: String
+    Description: Namespace for resources
+  LoginLambdaArn:
+    Type: String
+  LogoffLambdaArn:
+    Type: String
+  RegisterLambdaArn:
+    Type: String
+  FindTaxiLambdaArn:
+    Type: String
+  CleanupLambdaArn:
+    Type: String
+  ApiGatewayStageName:
+    Type: String
+
+Resources:
+
+  RestApiGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      Name: !Sub "${Namespace}-Api"
+
+  ApiGatewayRegisterMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: 'POST'
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RegisterLambdaArn}/invocations
+      ResourceId: !GetAtt RestApiGateway.RootResourceId
+      RestApiId: !Ref RestApiGateway
+
+  ApiGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - ApiGatewayRegisterMethod
+    Properties:
+      RestApiId: !Ref RestApiGateway
+      StageName: !Ref ApiGatewayStageName
+
+  RegisterLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref RegisterLambdaArn
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestApiGateway}/${ApiGatewayStageName}/POST/register
+
+Outputs:
+  ApiGatewayRegisterInvokeURL:
+    Value: !Sub https://${RestApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${ApiGatewayStageName}
+

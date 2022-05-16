@@ -1,5 +1,6 @@
 Description: Stack to create all lambda functions
 
+
 Parameters:
   Namespace:
     Type: String
@@ -14,10 +15,105 @@ Resources:
       Properties:
         FunctionName: !Sub "${Namespace}-Register-Function"
         Runtime: python3.9
-        Handler: 'handler'
+        Handler: 'index.handler'
         MemorySize: 128
         Timeout: 10
         Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/${Namespace}-Register-Lambda-Role"
         Code:
-          S3Bucket: !Ref Bucket
-          S3Key: !Sub "build/${Namespace}/lambda/register.zip"
+          ZipFile: |
+            def handler(event, context):
+              print('I am called')
+              return {
+                'statusCode': '200',
+                'body': 'hello world',
+                'headers': {},
+              }
+
+  LoginLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${Namespace}-Login-Function"
+      Runtime: python3.9
+      Handler: 'index.handler'
+      MemorySize: 128
+      Timeout: 10
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/${Namespace}-Login-Lambda-Role"
+      Code:
+        ZipFile: |
+          def handler(event, context):
+            print('I am called')
+            return {
+              'statusCode': '200',
+              'body': 'hello world',
+              'headers': {},
+            }
+
+  LogoffLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${Namespace}-Logoff-Function"
+      Runtime: python3.9
+      Handler: 'index.handler'
+      MemorySize: 128
+      Timeout: 10
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/${Namespace}-Logoff-Lambda-Role"
+      Code:
+        ZipFile: |
+          def handler(event, context):
+            print('I am called')
+            return {
+              'statusCode': '200',
+              'body': 'hello world',
+              'headers': {},
+            }
+
+  FindTaxiLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${Namespace}-FindTaxi-Function"
+      Runtime: python3.9
+      Handler: 'index.handler'
+      MemorySize: 128
+      Timeout: 10
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/${Namespace}-FindTaxi-Lambda-Role"
+      Code:
+        ZipFile: |
+          def handler(event, context):
+            print('I am called')
+            return {
+              'statusCode': '200',
+              'body': 'hello world',
+              'headers': {},
+            }
+
+  CleanupLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${Namespace}-Cleanup-Function"
+      Runtime: python3.9
+      Handler: 'index.handler'
+      MemorySize: 128
+      Timeout: 10
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/${Namespace}-Cleanup-Lambda-Role"
+      Code:
+        ZipFile: |
+          def handler(event, context):
+            print('I am called')
+            return {
+              'statusCode': '200',
+              'body': 'hello world',
+              'headers': {},
+            }
+
+Outputs:
+
+  LoginLambdaArn:
+    Value: !GetAtt LoginLambda.Arn
+  LogoffLambdaArn:
+    Value: !GetAtt LogoffLambda.Arn
+  RegisterLambdaArn:
+    Value: !GetAtt RegisterLambda.Arn
+  FindTaxiLambdaArn:
+    Value: !GetAtt FindTaxiLambda.Arn
+  CleanupLambdaArn:
+    Value: !GetAtt CleanupLambda.Arn

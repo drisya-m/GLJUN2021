@@ -26,3 +26,16 @@ Resources:
       Parameters:
         Namespace: !Ref Namespace
         Bucket: !Ref Bucket
+
+  ApiStack:
+    Type: "AWS::CloudFormation::Stack"
+    Properties:
+      TemplateURL: !Sub 'https://${Bucket}.s3.amazonaws.com/build/${Namespace}/stack/api.yml'
+      Parameters:
+        Namespace: !Ref Namespace
+        LoginLambdaArn: !GetAtt LambdaStack.Outputs.LoginLambdaArn
+        LogoffLambdaArn: !GetAtt LambdaStack.Outputs.LogoffLambdaArn
+        RegisterLambdaArn: !GetAtt LambdaStack.Outputs.RegisterLambdaArn
+        FindTaxiLambdaArn: !GetAtt LambdaStack.Outputs.FindTaxiLambdaArn
+        CleanupLambdaArn: !GetAtt LambdaStack.Outputs.CleanupLambdaArn
+        ApiGatewayStageName: 'v1'
