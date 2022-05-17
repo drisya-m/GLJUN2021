@@ -8,13 +8,16 @@ Parameters:
   Bucket:
     Type: String
     Description: S3Bucket Name to use for files
+  BuildStamp:
+    Type: String
+    Description: String to be used to create artifacts
 
 Resources:
 
   SecurityStack:
     Type: "AWS::CloudFormation::Stack"
     Properties:
-      TemplateURL: !Sub 'https://${Bucket}.s3.amazonaws.com/build/${Namespace}/stack/security.yml'
+      TemplateURL: !Sub 'https://${Bucket}.s3.amazonaws.com/build/${Namespace}/${BuildStamp}/stack/security.yml'
       Parameters:
         Namespace: !Ref Namespace
 
@@ -23,15 +26,16 @@ Resources:
     DependsOn:
       - SecurityStack
     Properties:
-      TemplateURL: !Sub 'https://${Bucket}.s3.amazonaws.com/build/${Namespace}/stack/lambda.yml'
+      TemplateURL: !Sub 'https://${Bucket}.s3.amazonaws.com/build/${Namespace}/${BuildStamp}/stack/lambda.yml'
       Parameters:
         Namespace: !Ref Namespace
         Bucket: !Ref Bucket
+        BuildStamp: !Ref BuildStamp
 
   ApiStack:
     Type: "AWS::CloudFormation::Stack"
     Properties:
-      TemplateURL: !Sub 'https://${Bucket}.s3.amazonaws.com/build/${Namespace}/stack/api.yml'
+      TemplateURL: !Sub 'https://${Bucket}.s3.amazonaws.com/build/${Namespace}/${BuildStamp}/stack/api.yml'
       Parameters:
         Namespace: !Ref Namespace
         LoginLambdaArn: !GetAtt LambdaStack.Outputs.LoginLambdaArn
@@ -44,7 +48,7 @@ Resources:
   SnsStack:
     Type: "AWS::CloudFormation::Stack"
     Properties:
-      TemplateURL: !Sub 'https://${Bucket}.s3.amazonaws.com/build/${Namespace}/stack/sns.yml'
+      TemplateURL: !Sub 'https://${Bucket}.s3.amazonaws.com/build/${Namespace}/${BuildStamp}/stack/sns.yml'
       Parameters:
         Namespace: !Ref Namespace
         LocationLambdaArn: !GetAtt LambdaStack.Outputs.LocationLambdaArn
@@ -52,7 +56,7 @@ Resources:
   DriverStack:
     Type: "AWS::CloudFormation::Stack"
     Properties:
-      TemplateURL: !Sub 'https://${Bucket}.s3.amazonaws.com/build/${Namespace}/stack/driver.yml'
+      TemplateURL: !Sub 'https://${Bucket}.s3.amazonaws.com/build/${Namespace}/${BuildStamp}/stack/driver.yml'
       Parameters:
         Namespace: !Ref Namespace
         Bucket: !Ref Bucket

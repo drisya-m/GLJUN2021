@@ -1,5 +1,5 @@
 BUCKET := taxi-service-gljun2021-04
-TIMESTAMP := $(shell date +%s )
+BUILD_STAMP := $(shell date +%s )
 
 init:
 	@echo "initializing workspace"
@@ -9,13 +9,17 @@ init:
 build: check-env
 	@echo "running build"
 	@echo "copying files to build directory"
-	aws s3 sync src/ s3://$(BUCKET)/build/$(GLNAME)/ --acl public-read
+	rm -rf /tmp/gl-build/*
+	mkdir -p /tmp/gl-build/$(BUILD_STAMP)
+	cd src/lambda/; zip /tmp/gl-build/$(BUILD_STAMP)/lambda.zip *;
+	aws s3 sync src/ s3://$(BUCKET)/build/$(GLNAME)/$(BUILD_STAMP)/ --acl public-read
+	aws s3 cp /tmp/gl-build/$(BUILD_STAMP)/lambda.zip s3://$(BUCKET)/build/$(GLNAME)/$(BUILD_STAMP)/
 
 deploy: build
 	@echo "deploying application"
-	aws cloudformation validate-template --template-url https://$(BUCKET).s3.amazonaws.com/build/$(GLNAME)/stack/main.yml > /dev/null
+	aws cloudformation validate-template --template-url https://$(BUCKET).s3.amazonaws.com/build/$(GLNAME)/$(BUILD_STAMP)/stack/main.yml > /dev/null
 	aws cloudformation deploy --template-file src/stack/main.yml --stack-name $(GLNAME)-taxi-service \
-		--parameter-overrides Bucket=$(BUCKET) Namespace=$(GLNAME) \
+		--parameter-overrides Bucket=$(BUCKET) Namespace=$(GLNAME) BuildStamp=$(BUILD_STAMP)\
 		--capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM
 
 undeploy: check-env
