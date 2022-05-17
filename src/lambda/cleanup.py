@@ -8,25 +8,7 @@
 # @author Anirudh Kushwah
 # @since 2022.05
 #
-from typing import Optional
-
-import boto3
-import json
-
-dynamo = boto3.client('dynamodb')
-
-
-def respond(code: Optional[int], body=None, headers=None):
-    heads = {
-        'Content-Type': 'application/json',
-    }
-    if heads is not None:
-        heads.update(headers)
-    return {
-        'statusCode': str(code),
-        'body': json.dumps(body),
-        'headers': heads,
-    }
+from utils import respond
 
 
 def handler(event, context):
