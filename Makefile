@@ -4,9 +4,7 @@ BUILD_STAMP := $(shell date +%s )
 init: check-env prepare-build
 	@echo "initializing workspace"
 	aws s3api create-bucket --bucket $(BUCKET) --region us-east-1 --acl public-read --object-ownership BucketOwnerPreferred
-	pip3 install -r src/requirements.txt --target /tmp/gl-build/$(BUILD_STAMP)/
-	cd /tmp/gl-build/$(BUILD_STAMP)/; zip -r /tmp/gl-build/layer.zip *;
-	aws s3 cp /tmp/gl-build/layer.zip s3://$(BUCKET)/build/$(GLNAME)-$(BUILD_STAMP)-layer.zip
+
 	aws cloudformation deploy --template-file src/stack/base.yml --stack-name $(GLNAME)-base \
 		--parameter-overrides Bucket=$(BUCKET) Namespace=$(GLNAME) BuildStamp=$(BUILD_STAMP) \
 		--capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM
@@ -14,7 +12,12 @@ init: check-env prepare-build
 build: check-env prepare-build
 	@echo "running build"
 	@echo "copying files to build directory"
-	cp src/lambda/* /tmp/gl-build/$(BUILD_STAMP)/
+	# upload layer zip
+	pip3 install -r src/requirements.txt --target /tmp/gl-build/$(BUILD_STAMP)/
+	cd /tmp/gl-build/$(BUILD_STAMP)/; zip -r /tmp/gl-build/layer.zip *;
+	aws s3 cp /tmp/gl-build/layer.zip s3://$(BUCKET)/build/$(GLNAME)-$(BUILD_STAMP)-layer.zip
+	# upload lambda zip
+	rm -rf /tmp/gl-build/$(BUILD_STAMP)/*; cp src/lambda/* /tmp/gl-build/$(BUILD_STAMP)/
 	cd /tmp/gl-build/$(BUILD_STAMP)/; zip -r /tmp/gl-build/lambda.zip *; rm -rf /tmp/gl-build/$(BUILD_STAMP);
 	aws s3 sync src/ s3://$(BUCKET)/build/$(GLNAME)/$(BUILD_STAMP)/ --acl public-read
 	aws s3 cp /tmp/gl-build/lambda.zip s3://$(BUCKET)/build/$(GLNAME)/$(BUILD_STAMP)/
