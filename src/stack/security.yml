@@ -23,6 +23,17 @@ Resources:
       Path: /
       ManagedPolicyArns:
         - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+      Policies:
+        - PolicyName: "ReadSSMParameter"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "ssm:Get*"
+                  - "ssm:List*"
+                Resource: '*'
       RoleName: !Sub "${Namespace}-Login-Lambda-Role"
       Tags:
         - Key: Namespace
@@ -43,6 +54,7 @@ Resources:
       Path: /
       ManagedPolicyArns:
         - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
       RoleName: !Sub "${Namespace}-Logoff-Lambda-Role"
       Tags:
         - Key: Namespace
@@ -63,6 +75,7 @@ Resources:
       Path: /
       ManagedPolicyArns:
         - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
       RoleName: !Sub "${Namespace}-FindTaxi-Lambda-Role"
       Tags:
         - Key: Namespace
@@ -83,6 +96,7 @@ Resources:
       Path: /
       ManagedPolicyArns:
         - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
       RoleName: !Sub "${Namespace}-Cleanup-Lambda-Role"
       Tags:
         - Key: Namespace
@@ -103,6 +117,7 @@ Resources:
       Path: /
       ManagedPolicyArns:
         - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
       RoleName: !Sub "${Namespace}-Register-Lambda-Role"
       Tags:
         - Key: Namespace
@@ -122,6 +137,7 @@ Resources:
       Path: /
       ManagedPolicyArns:
         - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
       RoleName: !Sub "${Namespace}-Location-Lambda-Role"
       Tags:
         - Key: Namespace
