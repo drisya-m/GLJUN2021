@@ -11,6 +11,10 @@ Parameters:
   BuildStamp:
     Type: String
     Description: String to be used to create artifacts
+  DbSubnetId:
+    Type: String
+  LambdaSecurityGroup:
+    Type: String
 
 Resources:
 
@@ -31,6 +35,8 @@ Resources:
         Namespace: !Ref Namespace
         Bucket: !Ref Bucket
         BuildStamp: !Ref BuildStamp
+        DbSubnetId: !Ref DbSubnetId
+        LambdaSecurityGroup: !Ref LambdaSecurityGroup
 
   ApiStack:
     Type: "AWS::CloudFormation::Stack"

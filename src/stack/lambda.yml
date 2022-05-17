@@ -11,6 +11,10 @@ Parameters:
   BuildStamp:
       Type: String
       Description: String to be used to create artifacts
+  DbSubnetId:
+    Type: String
+  LambdaSecurityGroup:
+    Type: String
 
 Resources:
   RegisterLambda:
@@ -22,9 +26,16 @@ Resources:
         MemorySize: 128
         Timeout: 10
         Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/${Namespace}-Register-Lambda-Role"
+        Layers:
+          - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:${Namespace}-Layer:1"
         Code:
           S3Bucket: !Ref Bucket
           S3Key: !Sub "build/${Namespace}/${BuildStamp}/lambda.zip"
+        VpcConfig:
+          SecurityGroupIds:
+            - !Ref LambdaSecurityGroup
+          SubnetIds:
+            - !Ref DbSubnetId
 
   LoginLambda:
     Type: AWS::Lambda::Function
