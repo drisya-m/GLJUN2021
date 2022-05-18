@@ -13,8 +13,10 @@ build: check-env prepare-build
 	@echo "running build"
 	@echo "copying files to build directory"
 	# upload layer zip
-	pip3 install -r src/requirements.txt --target /tmp/gl-build/$(BUILD_STAMP)/
-	cd /tmp/gl-build/$(BUILD_STAMP)/; zip -r /tmp/gl-build/layer.zip *;
+	mkdir /tmp/gl-build/$(BUILD_STAMP)/python
+	pip3 install -r src/requirements.txt --target /tmp/gl-build/$(BUILD_STAMP)/python/
+	cd /tmp/gl-build/$(BUILD_STAMP)/python/; rm -r *dist-info __pycache__
+	cd /tmp/gl-build/$(BUILD_STAMP)/; zip -r /tmp/gl-build/layer.zip python;
 	aws s3 cp /tmp/gl-build/layer.zip s3://$(BUCKET)/build/$(GLNAME)-$(BUILD_STAMP)-layer.zip
 	# upload lambda zip
 	rm -rf /tmp/gl-build/$(BUILD_STAMP)/*; cp src/lambda/* /tmp/gl-build/$(BUILD_STAMP)/

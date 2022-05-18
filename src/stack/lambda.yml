@@ -21,8 +21,10 @@ Resources:
   LambdaLayer:
     Type: AWS::Lambda::LayerVersion
     Properties:
+      CompatibleArchitectures:
+        - 'x86_64'
       CompatibleRuntimes:
-        - python3.9
+        - python3.7
         - python3.8
       Content:
         S3Bucket: !Ref Bucket
@@ -36,7 +38,7 @@ Resources:
         - LambdaLayer
       Properties:
         FunctionName: !Sub "${Namespace}-Register-Function"
-        Runtime: python3.9
+        Runtime: python3.7
         Handler: 'register.handler'
         MemorySize: 128
         Timeout: 10
@@ -56,7 +58,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub "${Namespace}-Login-Function"
-      Runtime: python3.9
+      Runtime: python3.7
       Handler: 'login.handler'
       MemorySize: 128
       Timeout: 10
@@ -69,7 +71,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub "${Namespace}-Logoff-Function"
-      Runtime: python3.9
+      Runtime: python3.7
       Handler: 'logoff.handler'
       MemorySize: 128
       Timeout: 10
@@ -82,7 +84,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub "${Namespace}-FindTaxi-Function"
-      Runtime: python3.9
+      Runtime: python3.7
       Handler: 'find_taxi.handler'
       MemorySize: 128
       Timeout: 10
@@ -95,7 +97,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub "${Namespace}-Cleanup-Function"
-      Runtime: python3.9
+      Runtime: python3.7
       Handler: 'cleanup.handler'
       MemorySize: 128
       Timeout: 10
@@ -108,7 +110,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub "${Namespace}-Location-Function"
-      Runtime: python3.9
+      Runtime: python3.7
       Handler: 'location.handler'
       MemorySize: 128
       Timeout: 10
