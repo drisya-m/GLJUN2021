@@ -14,7 +14,7 @@ from utils import *
 def handler(event, context):
     body = get_request_body_json(event)
     print(body)
-
+    # db connection
     db_driver: DatabaseDriver = get_db_driver()
     db_driver.create_user_record(user=body)
     return respond(200, "hello world", {})
