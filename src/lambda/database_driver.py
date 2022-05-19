@@ -27,7 +27,7 @@ class DatabaseDriver:
     def get_taxi(self, taxi_id: str) -> dict:
         db = self.client[self.db_name]
         # @TODO get taxi record by id
-        return dict()
+        return dict({"taxi_id": taxi_id, "secret": taxi_id, "uuid": taxi_id})
 
     def create_taxi_record(self, taxi: dict) -> str:
         db = self.client[self.db_name]
@@ -37,13 +37,14 @@ class DatabaseDriver:
     def update_taxi_record(self, taxi_id: str, patch: dict):
         db = self.client[self.db_name]
         # @TODO patch the records
+        return True
 
-    def find_nearby_taxi(self, location: list, radius: float, limit: int) -> list[str]:
+    def find_nearby_taxi(self, location: list, radius: float, limit: int) -> list:
         db = self.client[self.db_name]
         # @TODO return list of all taxi_ids
         return list()
 
-    def list_all_taxis(self) -> list[dict]:
+    def list_all_taxis(self) -> list:
         db = self.client[self.db_name]
         # @TODO return list of all taxi records
         return list()
