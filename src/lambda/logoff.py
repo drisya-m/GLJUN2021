@@ -8,6 +8,7 @@
 # @author Anirudh Kushwah
 # @since 2022.05
 #
+import time
 import uuid
 
 from utils import *
@@ -30,7 +31,7 @@ def handler(event, context):
     if not existing_taxi_uuid:
         return respond(400, "already logged off", {})
     # update
-    if not db_driver.update_taxi_record(taxi_id=taxi_id, patch={"uuid": ""}):
+    if not db_driver.patch_taxi(taxi_id=taxi_id, patch={"uuid": "", "logoff_time": int(time.time())}):
         return respond(500, "", {})
     # publish a message to this uuid
     mqtt_client: MqttClient = get_mqtt_client()
