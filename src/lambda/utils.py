@@ -54,6 +54,11 @@ def get_taxi_id(event):
     return event['headers']['X-Taxi-Id']
 
 
+def get_user_id(event):
+    """ Reads taxi id from request headers."""
+    return event['headers']['X-User-Id']
+
+
 def get_token(event):
     """ Reads security token from request headers."""
     return event['headers']['X-Token']
@@ -112,7 +117,7 @@ def get_db_driver() -> DatabaseDriver:
         # get mongo uri
         mongo_uri = get_mongo_uri()
         # create database helper
-        _db_driver = DatabaseDriver(db_url=mongo_uri, db_name=get_database_name())
+        _db_driver = DatabaseDriver(mongo_uri=mongo_uri, database_name=get_database_name())
     return _db_driver
 
 
@@ -124,3 +129,15 @@ def is_valid_location(latitude, longitude) -> bool:
     if longitude > 180.0 or longitude < -180.0:
         return False
     return True
+
+
+def unauthorized() -> dict:
+    return respond(401, "unauthorized", {})
+
+
+def bad_request() -> dict:
+    return respond(401, "bad request", {})
+
+
+def ok_request() -> dict:
+    return respond(200, "", {})
