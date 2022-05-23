@@ -144,11 +144,11 @@ def bad_request() -> dict:
 
 
 def ok_request() -> dict:
-    return respond(200, {}, {})
+    return respond(200, {"msg": "ok"}, {})
 
 
 def server_error() -> dict:
-    return respond(500, {}, {})
+    return respond(500, {"msg": "server error"}, {})
 
 
 def taxi_types() -> set:

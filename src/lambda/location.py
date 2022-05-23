@@ -20,21 +20,21 @@ def handler(event, context):
     existing_taxi = db_driver.get_taxi(taxi_id=taxi_id)
     # if no taxi found, return 401
     if not existing_taxi:
-        return respond(401, "unauthorized", {})
+        return unauthorized()
     # validate jwt
     if not validate_token(event, identity=taxi_id, secret=existing_taxi['secret']):
-        respond(401, "unauthorized", {})
+        return unauthorized()
     # extract body for location
     body: dict = get_request_body_json(event)
     # find co-ordinates
     location: list = body.get('location')
     if not isinstance(location, list) or len(location) != 2:
-        return respond(400, "invalid location", {})
+        return bad_request()
     # make sure we have correct longitude and latitude
     if not is_valid_location(location[0], location[1]):
-        return respond(400, "invalid location", {})
+        return bad_request()
     # patch location co-ordinates for taxi
     if not db_driver.patch_taxi(taxi_id=taxi_id, patch={"location": location}):
-        return respond(500, "", {})
+        return server_error()
     print(f"location update request from taxi {taxi_id} with location {location}")
-    return respond(200, "", {"X-Taxi-Id": taxi_id})
+    return ok_request()
