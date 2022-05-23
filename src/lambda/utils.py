@@ -85,6 +85,8 @@ def get_mqtt_public_host() -> str:
 def get_mongo_uri() -> str:
     if os.environ.get('mode') == 'LOCAL':
         return ''
+    if os.environ.get('mode') == 'IN_MEMORY':
+        return ''
     ssm = boto3.client('ssm')
     parameter = ssm.get_parameter(Name=os.environ['SSM_MONGO_URI'], WithDecryption=False)
     return parameter['Parameter']['Value']
@@ -134,15 +136,19 @@ def is_valid_location(latitude, longitude) -> bool:
 
 
 def unauthorized() -> dict:
-    return respond(401, "unauthorized", {})
+    return respond(401, {"msg": "unauthorized"}, {})
 
 
 def bad_request() -> dict:
-    return respond(401, "bad request", {})
+    return respond(401, {"msg": "bad request"}, {})
 
 
 def ok_request() -> dict:
-    return respond(200, "", {})
+    return respond(200, {}, {})
+
+
+def server_error() -> dict:
+    return respond(500, {}, {})
 
 
 def taxi_types() -> set:
