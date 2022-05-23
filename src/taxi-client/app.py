@@ -9,6 +9,7 @@
 # @since 2022.05
 #
 import random
+import time
 from random import uniform
 
 from apiclient import ApiClient
@@ -36,4 +37,6 @@ for index in range(0, USER_COUNT):
     client.register()
     client.login()
     client.location(uniform(-180, 180), uniform(-90, 90))
-    client.logoff()
+    # client.logoff()
+    client.mqtt_client.client.loop_forever()
+
