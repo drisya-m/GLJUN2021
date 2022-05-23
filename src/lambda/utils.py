@@ -143,3 +143,7 @@ def bad_request() -> dict:
 
 def ok_request() -> dict:
     return respond(200, "", {})
+
+
+def taxi_types() -> set:
+    return {'MINI', 'ECONOMY', 'SEDAN', 'LUXURY', 'ROYAL'}

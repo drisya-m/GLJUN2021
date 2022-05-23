@@ -78,7 +78,7 @@ def ride():
 
 def run_event(fn, event):
     r = fn(event, None)
-    resp = make_response(json.dumps(r['body']), r['statusCode'])
+    resp = make_response(r['body'], r['statusCode'])
     resp.headers.update(r['headers'])
     return resp
 

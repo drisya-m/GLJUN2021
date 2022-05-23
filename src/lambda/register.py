@@ -8,9 +8,57 @@
 # @author Anirudh Kushwah
 # @since 2022.05
 #
-from utils import respond
+import uuid
+
+from utils import *
 
 
 def handler(event, context):
-    print(event)
-    return respond(200, "hello world", {})
+    # read body
+    body: dict = get_request_body_json(event)
+    # Handle based on types
+    registration_type: str = body.get('type')
+    # different validation for taxi and user
+    if registration_type == 'taxi':
+        return handle_taxi_registration(data=body)
+    elif registration_type == 'user':
+        return handle_user_registration(data=body)
+    else:
+        return bad_request()
+
+
+def handle_taxi_registration(data: dict):
+    db_driver: DatabaseDriver = get_db_driver()
+    taxi: dict = dict()
+
+    # Validate Taxi Type
+    taxi_type: str = data.get('taxi_type')
+    if taxi_type not in taxi_types():
+        return bad_request()
+    taxi['type'] = taxi_type
+
+    # Validate Name
+    driver_name = data.get('name')
+    if not driver_name:
+        return bad_request()
+    taxi['name'] = driver_name
+
+    # Validate license
+    taxi_license: str = data.get('license')
+    if not taxi_license:
+        return bad_request()
+    taxi['license'] = taxi_license
+
+    # Generate a secret
+    random_secret = str(uuid.uuid4())
+    taxi['secret'] = random_secret
+
+    # Save
+    taxi_id: str = db_driver.create_taxi_record(taxi=taxi)
+    return respond(200, {
+        "taxi_id": taxi_id, "secret": random_secret
+    }, {})
+
+
+def handle_user_registration(data: dict):
+    pass

@@ -33,7 +33,7 @@ class DatabaseDriver:
 
     def __init__(self, database_name: str, mongo_uri: str):
         if os.environ.get('mode') == 'LOCAL':
-            self.client = pymongo_inmemory.MongoClient()
+            self.client = pymongo_inmemory.MongoClient("mongodb://127.0.0.1/something", 27017)
         else:
             self.client = pymongo.MongoClient(mongo_uri)
         self.database_name = database_name
@@ -105,7 +105,7 @@ class DatabaseDriver:
     # Create a new record
     def create_new_record(self, col_name: str, record: dict) -> str:
         col: Collection = self.__database[col_name]
-        return str(col.insert_one(document=record))
+        return str(col.insert_one(document=record).inserted_id)
 
     def create_taxi_record(self, taxi: dict) -> str:
         return self.create_new_record(col_name=COL_TAXI, record=taxi)
