@@ -35,11 +35,12 @@ def handler(event, context):
     mqtt_client: MqttClient = get_mqtt_client()
     # Respond with taxi uuid
     print(f"login request from taxi {taxi_id} was set to uuid {taxi_uuid}")
-    mqtt_client.send_to_taxi(taxi_uuid=taxi_uuid, message={"msg": "welcome"})
+    topic = f'{get_namespace()}/taxi/{taxi_uuid}'
+    mqtt_client.send_to_topic(topic=topic, message={"msg": "welcome"})
     return respond(200,
                    {
                        "host": get_mqtt_public_host(),
-                       "taxi_uuid": taxi_uuid
+                       "topic": topic
                    }, {
                        "X-Taxi-Id": taxi_id
                    })

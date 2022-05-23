@@ -13,6 +13,8 @@ import random
 
 import paho.mqtt.client
 from paho.mqtt import client as mqtt_client
+from paho.mqtt.packettypes import PacketTypes
+from paho.mqtt.properties import Properties
 
 
 class MqttClient:
@@ -36,6 +38,8 @@ class MqttClient:
         client.connect(self.host, self.port)
         self.client = client
 
-    def send_to_taxi(self, taxi_uuid: str, message: dict):
-        print(f'sending message to taxi topic {taxi_uuid} {json.dumps(message)}')
-        self.client.publish(topic=f'taxi/{taxi_uuid}', payload=json.dumps(message))
+    def send_to_topic(self, topic: str, message: dict):
+        properties = Properties(PacketTypes.PUBLISH)
+        properties.MessageExpiryInterval = 150
+        print(f'sending message to topic {topic} {json.dumps(message)}')
+        self.client.publish(topic=topic, payload=json.dumps(message), retain=True, properties=properties)
