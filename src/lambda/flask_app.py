@@ -52,7 +52,7 @@ def location():
 @app.route('/login', methods=['POST'])
 def login():
     from login import handler
-    return run_event(handler, get_event(request))
+    return run_event(handler, get_event(request, skip_body=True))
 
 
 # Handle logoff Call
@@ -76,6 +76,18 @@ def ride():
     return run_event(handler, get_event(request))
 
 
+# Utility Calls
+@app.route('/token', methods=['POST'])
+def token():
+    data: dict = request.get_json()
+    taxi_id = data['taxi_id']
+    secret = data['secret']
+    from jwthelper import JwtHelper
+    helper = JwtHelper(secret=secret)
+    j_token = helper.create_jwt(identity=taxi_id, minutes=5)
+    return j_token, 200
+
+
 def run_event(fn, event):
     r = fn(event, None)
     resp = make_response(r['body'], r['statusCode'])
@@ -83,9 +95,12 @@ def run_event(fn, event):
     return resp
 
 
-def get_event(r: Request) -> dict:
+def get_event(r: Request, skip_body: bool = False) -> dict:
     event: dict = dict()
-    event['body'] = json.dumps(request.get_json())
+    if skip_body:
+        event['body'] = ""
+    else:
+        event['body'] = json.dumps(request.get_json())
     event['isBase64Encoded'] = False
     heads = dict()
     for k in request.headers.keys():
