@@ -12,6 +12,7 @@ import os
 
 import pymongo
 import pymongo_inmemory
+from bson import ObjectId
 from pymongo.collection import Collection
 from pymongo.database import Database
 
@@ -72,7 +73,7 @@ class DatabaseDriver:
     # GET BY ID METHODS START HERE
     def get_by_id(self, col_name: str, record_id: str) -> dict:
         col: Collection = self.__database[col_name]
-        return dict(col.find_one({'_id': record_id}))
+        return dict(col.find_one({'_id': ObjectId(record_id)}))
 
     def get_taxi(self, taxi_id: str) -> dict:
         return self.get_by_id(COL_TAXI, taxi_id)
@@ -87,10 +88,10 @@ class DatabaseDriver:
     # Update Method Starts from Here
     def patch_by_query(self, col_name: str, query: dict, patch: dict) -> int:
         col: Collection = self.__database[col_name]
-        return col.update_one(filter=query, update=patch).modified_count
+        return col.update_one(filter=query, update={"$set" : patch}).modified_count
 
     def patch_by_id(self, col_name: str, record_id: str, patch: dict) -> bool:
-        return self.patch_by_query(col_name=col_name, query={'_id': record_id}, patch=patch) == 1
+        return self.patch_by_query(col_name=col_name, query={'_id': ObjectId(record_id)}, patch=patch) == 1
 
     def patch_taxi(self, taxi_id: str, patch: dict) -> bool:
         return self.patch_by_id(col_name=COL_TAXI, record_id=taxi_id, patch=patch)
