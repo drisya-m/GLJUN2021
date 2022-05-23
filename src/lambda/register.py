@@ -61,4 +61,22 @@ def handle_taxi_registration(data: dict):
 
 
 def handle_user_registration(data: dict):
-    pass
+    db_driver: DatabaseDriver = get_db_driver()
+    user: dict = dict()
+
+    # Validate Name
+    user_name = data.get('name')
+    if not user_name:
+        return bad_request()
+    user['name'] = user_name
+
+    # Generate a secret
+    random_secret = str(uuid.uuid4())
+    user['secret'] = random_secret
+
+    # Save
+    user_id: str = db_driver.create_user_record(user=user)
+    return respond(200, {
+        "user_id": user_id, "secret": random_secret
+    }, {})
+
