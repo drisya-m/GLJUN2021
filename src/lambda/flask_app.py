@@ -59,7 +59,7 @@ def login():
 @app.route('/logoff', methods=['POST'])
 def logoff():
     from logoff import handler
-    return run_event(handler, get_event(request))
+    return run_event(handler, get_event(request, skip_body=True))
 
 
 # Handle register Call
