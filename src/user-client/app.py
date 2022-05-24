@@ -8,7 +8,6 @@
 # @author Drisya Mathilakath
 # @since 2022.05
 #
-import random
 from random import uniform
 
 from apiclient import ApiClient
@@ -24,6 +23,7 @@ for index in range(0, USER_COUNT):
     name = f'taxi user {index}'
     client = ApiClient(uri=SERVER_URI, name=name)
     client.register()
-    latitude, longitude = uniform(-180, 180), uniform(-90, 90)
+    #latitude, longitude = uniform(-180, 180), uniform(-90, 90)
+    latitude, longitude = uniform(-180, MAX_LATITUDE), uniform(-90, MAX_LONGITUDE)
     client.find_taxi(latitude, longitude)
     user_list.append(client)
