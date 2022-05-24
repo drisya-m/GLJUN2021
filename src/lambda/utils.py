@@ -128,9 +128,9 @@ def get_db_driver() -> DatabaseDriver:
 def is_valid_location(latitude, longitude) -> bool:
     if not isinstance(latitude, (float, int)) or not isinstance(longitude, (float, int)):
         return False
-    if latitude > 90.0 or latitude < -90.0:
+    if latitude > 180.0 or latitude < -180.0:
         return False
-    if longitude > 180.0 or longitude < -180.0:
+    if longitude > 90.0 or longitude < -90.0:
         return False
     return True
 
