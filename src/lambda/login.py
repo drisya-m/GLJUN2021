@@ -40,7 +40,9 @@ def handler(event, context):
     mqtt_client: MqttClient = get_mqtt_client()
     # Respond with taxi uuid
     print(f"login request from taxi {taxi_id} was set to uuid {taxi_uuid}")
+    mqtt_client.connect()
     mqtt_client.send_to_topic(topic=topic, message={"msg": "welcome"})
+    mqtt_client.client.disconnect()
     return respond(200,
                    {
                        "host": get_mqtt_public_host(),
