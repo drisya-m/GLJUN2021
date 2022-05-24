@@ -9,6 +9,10 @@
 # @since 2022.05
 #
 import json
+import random
+import threading
+import time
+from threading import Thread
 from typing import Optional
 
 import paho.mqtt.client
@@ -17,7 +21,7 @@ from jwthelper import JwtHelper
 from mqtthelper import MqttClient
 
 
-class ApiClient:
+class ApiClient(Thread):
     # URI for server
     uri: str
     # Secret given by server
@@ -36,8 +40,12 @@ class ApiClient:
     mqtt_host: str
     # mqtt client
     mqtt_client: MqttClient
+    # location box
+    latitude_range = [12.87, 13.21]
+    longitude_range = [77.34, 77.87]
 
     def __init__(self, uri: str, name: str, license: str, taxi_type: str):
+        super(ApiClient, self).__init__(name=name)
         self.uri = uri
         self.name = name
         self.license = license
@@ -92,7 +100,7 @@ class ApiClient:
         self.topic = ''
         self.mqtt_client.close()
 
-    def location(self, latitude, longitude):
+    def send_location(self, latitude, longitude):
         print(f'{self.taxi_id}/{self.name} trying to send location')
         data: dict = self.send_authenticated('location', {'location': [latitude, longitude]})
         print(f'server responded to location request with {data}')
@@ -101,3 +109,22 @@ class ApiClient:
         print(f'taxi {self.taxi_id} has read a message from mqtt')
         body: dict = json.loads(message.payload)
         print(body)
+
+    def start_moving(self):
+        count = 0
+        current_latitude = random.uniform(self.latitude_range[0], self.latitude_range[1])
+        current_longitude = random.uniform(self.longitude_range[0], self.longitude_range[1])
+        while count < 1000:
+            self.send_location(current_latitude, current_longitude)
+            time.sleep(random.randint(30, 90))
+            # latitude
+            current_latitude = current_latitude + random.uniform(-0.005, 0.005)
+            current_longitude = current_longitude +  random.uniform(-0.005, 0.005)
+            # increment the count
+            count = count + 1
+        self.mqtt_client.client.disconnect()
+
+    def run(self) -> None:
+        self.login()
+        threading.Thread(target=self.start_moving).start()
+        self.mqtt_client.client.loop_forever()

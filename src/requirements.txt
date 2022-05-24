@@ -3,3 +3,4 @@ boto3
 paho-mqtt
 pyjwt
 pymongo-inmemory
+joblib

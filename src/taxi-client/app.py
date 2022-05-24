@@ -9,8 +9,8 @@
 # @since 2022.05
 #
 import random
-import time
-from random import uniform
+
+from joblib import Parallel, delayed
 
 from apiclient import ApiClient
 
@@ -31,12 +31,10 @@ def get_license() -> str:
     return f"KA/{var1}/{var2}"
 
 
+taxi_clients = list()
 for index in range(0, USER_COUNT):
     name = f'taxi driver {index}'
     client = ApiClient(uri=SERVER_URI, name=name, license=get_license(), taxi_type=get_taxi_type())
     client.register()
-    client.login()
-    client.location(uniform(-180, 180), uniform(-90, 90))
-    # client.logoff()
-    client.mqtt_client.client.loop_forever()
-
+    taxi_clients.append(client)
+Parallel(n_jobs=USER_COUNT, backend='threading')(delayed(client.run)() for client in taxi_clients)
