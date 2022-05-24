@@ -34,7 +34,12 @@ def handler(event, context):
     if not is_valid_location(location[0], location[1]):
         return bad_request()
     # patch location co-ordinates for taxi
-    if not db_driver.patch_taxi(taxi_id=taxi_id, patch={"location": location}):
+    patch_succeeded = db_driver.patch_taxi(taxi_id=taxi_id, patch={
+        "location": {
+            "type": "Point",
+            "coordinates": location
+        }})
+    if not patch_succeeded:
         return server_error()
     print(f"location update request from taxi {taxi_id} with location {location}")
     return ok_request()
