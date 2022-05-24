@@ -61,11 +61,10 @@ class DatabaseDriver:
                 print(f"collection {col_name} exists")
             else:
                 print(f"collection {col_name} will be created")
-                # Create indexes here!
-                collection: Collection = self.__database[COL_RIDES]
-                collection.create_index('taxi_id')
-                collection.create_index('user_id')
-                collection.create_index('status')
+
+        # Create indexes here!
+        self.__database[COL_TAXI].create_index([("location", pymongo.GEOSPHERE)])
+        self.__database[COL_TAXI].create_index('status')
 
     @staticmethod
     def __get_all_collections() -> list:
