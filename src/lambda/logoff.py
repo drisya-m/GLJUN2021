@@ -31,7 +31,10 @@ def handler(event, context):
     if not existing_taxi_topic:
         return bad_request()
     # update
-    if not db_driver.patch_taxi(taxi_id=taxi_id, patch={"topic": "", "logoff_time": int(time.time())}):
+    if not db_driver.patch_taxi(taxi_id=taxi_id, patch={
+        "logoff_time": int(time.time()),
+        "status": "OFFLINE"
+    }):
         return server_error()
     # publish a message to this uuid
     mqtt_client: MqttClient = get_mqtt_client()

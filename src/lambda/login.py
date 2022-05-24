@@ -30,7 +30,11 @@ def handler(event, context):
     taxi_uuid = str(uuid.uuid4())
     topic = f'{get_namespace()}/taxi/{taxi_uuid}'
     # patch
-    if not db_driver.patch_taxi(taxi_id=taxi_id, patch={"topic": topic, "login_time": int(time.time())}):
+    if not db_driver.patch_taxi(taxi_id=taxi_id, patch={
+        "topic": topic,
+        "login_time": int(time.time()),
+        "status": "ONLINE"
+    }):
         return respond(500, "", {})
     # publish a message to this uuid
     mqtt_client: MqttClient = get_mqtt_client()
