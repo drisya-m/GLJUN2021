@@ -45,7 +45,7 @@ Resources:
       Properties:
         FunctionName: !Sub "${Namespace}-Register-Function"
         Runtime: python3.7
-        Handler: 'register.handler'
+        Handler: 'functions.register.handler'
         MemorySize: 128
         Timeout: 10
         Role: !Ref CommonLambdaRoleArn
@@ -62,13 +62,16 @@ Resources:
         Environment:
           Variables:
             NAMESPACE: !Ref Namespace
+            SSM_MONGO_URI: !Ref MongoUriSsmParameterName
+            MQTT_PUBLIC_IP: !Ref MqttPublicIp
+            MQTT_PRIVATE_IP: !Ref MqttPrivateIp
 
   LoginLambda:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub "${Namespace}-Login-Function"
       Runtime: python3.7
-      Handler: 'login.handler'
+      Handler: 'functions.login.handler'
       MemorySize: 128
       Timeout: 10
       Role: !Ref CommonLambdaRoleArn
@@ -94,7 +97,7 @@ Resources:
     Properties:
       FunctionName: !Sub "${Namespace}-Logoff-Function"
       Runtime: python3.7
-      Handler: 'logoff.handler'
+      Handler: 'functions.logoff.handler'
       MemorySize: 128
       Timeout: 10
       Role: !Ref CommonLambdaRoleArn
@@ -115,12 +118,12 @@ Resources:
           MQTT_PUBLIC_IP: !Ref MqttPublicIp
           MQTT_PRIVATE_IP: !Ref MqttPrivateIp
 
-  FindTaxiLambda:
+  CreateRideLambda:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub "${Namespace}-FindTaxi-Function"
+      FunctionName: !Sub "${Namespace}-CreateRide-Function"
       Runtime: python3.7
-      Handler: 'find_taxi.handler'
+      Handler: 'functions.createride.handler'
       MemorySize: 128
       Timeout: 10
       Role: !Ref CommonLambdaRoleArn
@@ -130,13 +133,35 @@ Resources:
       Environment:
         Variables:
           NAMESPACE: !Ref Namespace
+          SSM_MONGO_URI: !Ref MongoUriSsmParameterName
+          MQTT_PUBLIC_IP: !Ref MqttPublicIp
+          MQTT_PRIVATE_IP: !Ref MqttPrivateIp
+
+  FindTaxiLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${Namespace}-FindTaxi-Function"
+      Runtime: python3.7
+      Handler: 'functions.find_taxi.handler'
+      MemorySize: 128
+      Timeout: 10
+      Role: !Ref CommonLambdaRoleArn
+      Code:
+        S3Bucket: !Ref Bucket
+        S3Key: !Sub "build/${Namespace}/${BuildStamp}/lambda.zip"
+      Environment:
+        Variables:
+          NAMESPACE: !Ref Namespace
+          SSM_MONGO_URI: !Ref MongoUriSsmParameterName
+          MQTT_PUBLIC_IP: !Ref MqttPublicIp
+          MQTT_PRIVATE_IP: !Ref MqttPrivateIp
 
   AcceptRideLambda:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub "${Namespace}-AcceptRide-Function"
       Runtime: python3.7
-      Handler: 'accept.handler'
+      Handler: 'functions.accept.handler'
       MemorySize: 128
       Timeout: 10
       Role: !Ref CommonLambdaRoleArn
@@ -153,13 +178,16 @@ Resources:
       Environment:
         Variables:
           NAMESPACE: !Ref Namespace
+          SSM_MONGO_URI: !Ref MongoUriSsmParameterName
+          MQTT_PUBLIC_IP: !Ref MqttPublicIp
+          MQTT_PRIVATE_IP: !Ref MqttPrivateIp
 
   RideUpdateLambda:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub "${Namespace}-RideUpdate-Function"
       Runtime: python3.7
-      Handler: 'ride.handler'
+      Handler: 'functions.ride.handler'
       MemorySize: 128
       Timeout: 10
       Role: !Ref CommonLambdaRoleArn
@@ -176,14 +204,16 @@ Resources:
       Environment:
         Variables:
           NAMESPACE: !Ref Namespace
-
+          SSM_MONGO_URI: !Ref MongoUriSsmParameterName
+          MQTT_PUBLIC_IP: !Ref MqttPublicIp
+          MQTT_PRIVATE_IP: !Ref MqttPrivateIp
 
   CleanupLambda:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub "${Namespace}-Cleanup-Function"
       Runtime: python3.7
-      Handler: 'cleanup.handler'
+      Handler: 'functions.cleanup.handler'
       MemorySize: 128
       Timeout: 10
       Role: !Ref CommonLambdaRoleArn
@@ -193,13 +223,16 @@ Resources:
       Environment:
         Variables:
           NAMESPACE: !Ref Namespace
+          SSM_MONGO_URI: !Ref MongoUriSsmParameterName
+          MQTT_PUBLIC_IP: !Ref MqttPublicIp
+          MQTT_PRIVATE_IP: !Ref MqttPrivateIp
 
   LocationLambda:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub "${Namespace}-Location-Function"
       Runtime: python3.7
-      Handler: 'location.handler'
+      Handler: 'functions.location.handler'
       MemorySize: 128
       Timeout: 10
       Role: !Ref CommonLambdaRoleArn
@@ -228,6 +261,8 @@ Outputs:
     Value: !GetAtt LogoffLambda.Arn
   RegisterLambdaArn:
     Value: !GetAtt RegisterLambda.Arn
+  CreateRideLambdaArn:
+    Value: !GetAtt CreateRideLambda.Arn
   FindTaxiLambdaArn:
     Value: !GetAtt FindTaxiLambda.Arn
   AcceptRideLambdaArn:

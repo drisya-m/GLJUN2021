@@ -22,7 +22,7 @@ build: check-env prepare-build
 	cd /tmp/gl-build/$(BUILD_STAMP)/; zip -r /tmp/gl-build/layer.zip python;
 	aws s3 cp /tmp/gl-build/layer.zip s3://$(BUCKET)/build/$(GLNAME)-$(BUILD_STAMP)-layer.zip
 	# upload lambda zip
-	rm -rf /tmp/gl-build/$(BUILD_STAMP)/*; cp src/lambda/* /tmp/gl-build/$(BUILD_STAMP)/
+	rm -rf /tmp/gl-build/$(BUILD_STAMP)/*; cp src/* /tmp/gl-build/$(BUILD_STAMP)/
 	cd /tmp/gl-build/$(BUILD_STAMP)/; zip -r /tmp/gl-build/lambda.zip *; rm -rf /tmp/gl-build/$(BUILD_STAMP);
 	aws s3 sync src/ s3://$(BUCKET)/build/$(GLNAME)/$(BUILD_STAMP)/ --acl public-read
 	aws s3 cp /tmp/gl-build/lambda.zip s3://$(BUCKET)/build/$(GLNAME)/$(BUILD_STAMP)/
