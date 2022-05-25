@@ -9,13 +9,24 @@
 # @since 2022.05
 #
 from random import uniform
-
+import argparse
 from apiclient import ApiClient
 
 USER_COUNT = 20
 MAX_LATITUDE = 60
 MAX_LONGITUDE = 60
 SERVER_URI = 'http://127.0.0.1:5000'
+
+# Initializing Parser
+parser = argparse.ArgumentParser(description='User Registration')
+
+#Adding argument
+parser.add_argument('--count', type=int, help='user count')
+parser.add_argument('--uri', type=str, help='server uri')
+parser.add_argument('--latitude', type=int, nargs='+', help='min and max latitude')
+parser.add_argument('--longitude', type=int, nargs='+', help='min and max longitude')
+args = parser.parse_args()
+print(args)
 
 user_list = list()
 
