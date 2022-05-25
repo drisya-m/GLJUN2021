@@ -53,6 +53,10 @@ class MqttClient:
             self.log.log('publishing ephemeral message: topic={} message={}', topic, json.dumps(message))
             self.client.publish(topic=topic, payload=json.dumps(message), retain=False)
 
+    def send_message(self, topic: str, template: str, *args):
+        payload = {"type": "message", "msg": template.format(*args)}
+        self.send_to_topic(topic, payload, retain=False)
+
     def subscribe(self, topic: str, fn):
         self.log.log('subscribing to topic={}', topic)
         self.client.on_message = fn
