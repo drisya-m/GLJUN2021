@@ -10,7 +10,7 @@
 #
 import uuid
 
-from utils import *
+from .utils import *
 
 
 def handler(event, context):

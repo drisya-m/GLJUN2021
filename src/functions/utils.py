@@ -17,12 +17,8 @@ import socket
 
 import boto3
 
-from database_driver import DatabaseDriver
-from jwthelper import JwtHelper
-from mqtthelper import MqttClient
+from core import DatabaseDriver, JwtHelper, MqttClient
 
-# Global Mqtt Client
-_mq_client: MqttClient = None
 # Global Database Drive
 _db_driver: DatabaseDriver = None
 
@@ -105,14 +101,7 @@ def is_connected(hostname, port):
 
 
 def get_mqtt_client() -> MqttClient:
-    global _mq_client
-    if _mq_client is None:
-        # get host
-        mqtt_host = get_mqtt_private_host()
-        # create uuid for the taxi to subscribe to
-        _mq_client = MqttClient(host=mqtt_host)
-        _mq_client.connect()
-    return _mq_client
+    return MqttClient(host=get_mqtt_private_host(), name='lambda')
 
 
 def get_db_driver() -> DatabaseDriver:
@@ -145,6 +134,10 @@ def bad_request() -> dict:
 
 def ok_request() -> dict:
     return respond(200, {"msg": "ok"}, {})
+
+
+def ok_response(body: dict) -> dict:
+    return respond(200, body, {})
 
 
 def server_error() -> dict:

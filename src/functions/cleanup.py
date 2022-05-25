@@ -8,7 +8,7 @@
 # @author Anirudh Kushwah
 # @since 2022.05
 #
-from utils import *
+from .utils import *
 
 
 def handler(event, context):
