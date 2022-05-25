@@ -8,6 +8,7 @@
 # @author Anirudh Kushwah
 # @since 2022.05
 #
+from .database_driver import DatabaseDriver
 from .httpclient import HttpClient
 from .jwthelper import JwtHelper
 from .locationbound import LocationBound
