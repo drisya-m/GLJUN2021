@@ -13,3 +13,5 @@ from .jwthelper import JwtHelper
 from .locationbound import LocationBound
 from .log import Log
 from .mqttclient import MqttClient
+
+TAXI_TYPES = ['MINI', 'ECONOMY', 'SEDAN', 'LUXURY', 'ROYAL']
