@@ -50,7 +50,7 @@ class UserApiClient:
         self.log = Log(name=f'{name}/{self.taxi_type}')
 
     def send_authenticated(self, path: str, body):
-        return self.server_client.send_taxi_request(path, self.user_id, self.secret, body)
+        return self.server_client.send_user_request(path, self.user_id, self.secret, body)
 
     def register(self):
         self.log.log('registering this user with server')
@@ -66,15 +66,17 @@ class UserApiClient:
     def ride(self):
         current_latitude = random.uniform(self.bound.min_latitude, self.bound.max_latitude)
         current_longitude = random.uniform(self.bound.min_longitude, self.bound.max_longitude)
-        self.log.log('ride request: location={}, {} type={}', current_latitude, current_longitude, self.taxi_type)
+        self.log.log('create ride request: location={}, {} type={}', current_latitude, current_longitude,
+                     self.taxi_type)
         payload = {'location': [current_latitude, current_longitude], 'type': self.taxi_type}
-        data: dict = self.send_authenticated('find_taxi', payload)
+        data: dict = self.send_authenticated('createride', payload)
 
         ride_topic = data.get('topic')
         mqtt_host = data.get('host')
-        self.log.log('ride request accepted: topic={} host={}', ride_topic, mqtt_host)
+        ride_id = data.get('ride_id')
+        self.log.log('ride request accepted: topic={} host={} ride_id={}', ride_topic, mqtt_host, ride_id)
 
-        # wait for message using mqtt client
+        # subscribe to topic
         mqtt_client = MqttClient(host=mqtt_host, name=self.name)
         mqtt_client.connect()
 
@@ -84,8 +86,26 @@ class UserApiClient:
 
         # wait for responses
         mqtt_client.subscribe(fn=message_responder, topic=ride_topic)
-        mqtt_client.client.loop_forever()
+        mqtt_client.client.loop_start()
+        # lets find taxi!
+        try:
+            data: dict = self.send_authenticated('findtaxi', data)
+            if data.get('success'):
+                self.log.log('taxi allocated for the ride: taxi_id={}', data.get('taxi_id'))
+            else:
+                self.log.log('taxi allocation failed for ride: ride_id={} msg={}', ride_id, data.get('msg'))
+
+        finally:
+            mqtt_client.client.loop_stop()
+            mqtt_client.close()
 
     def ride_request_handler(self, mqtt_client: MqttClient, message: paho.mqtt.client.MQTTMessage):
         body: dict = json.loads(message.payload)
-        self.log.log('got ride request message: {}', body)
+        if body.get("type") == "message":
+            self.log.log('message from server: {}', body.get('msg'))
+            return
+        if body.get('completed'):
+            self.log.log('ride request has been served by server: ride_id={}', body.get('ride_id'))
+            mqtt_client.close()
+            return
+        self.log.log('unhandled message from server: {}', body)
