@@ -92,6 +92,7 @@ class TaxiApiClient:
         if message_type == 'ride_request':
             accept: bool = bool(random.getrandbits(1))
             body['accepted'] = accept
+            time.sleep(random.randint(1, 5))
             success: dict = self.send_authenticated('accept', body)
             if accept and success.get('success'):
                 self.ride_remaining = self.ride_remaining - 1
