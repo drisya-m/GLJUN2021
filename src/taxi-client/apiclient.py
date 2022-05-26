@@ -44,3 +44,17 @@ class ApiClient:
     def taxi_types(cls):
         return ['MINI', 'ECONOMY', 'SEDAN', 'LUXURY', 'ROYAL']
 
+
+    def taxi_login(self, license):
+        print(f'{license} is logging in')
+        request_url = f'{self.uri}/login'
+        helper = JwtHelper(secret=self.secret)
+        token = helper.create_jwt(identity=license, minutes=2)
+        payload = {'taxi_id': self.taxi_id}
+        response = requests.request(method="POST", url=request_url, json=payload,
+                                    headers={'Content-Type': 'application/json',
+                                             'X-Taxi-Id': license,
+                                             'X-Token': token})
+        print(response.text)
+        data = response.json()
+        print(f'Server responded with {data}')

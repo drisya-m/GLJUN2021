@@ -33,3 +33,7 @@ for index in range(0, taxi_count):
     category = random.choice(ApiClient.taxi_types())
     client = ApiClient(uri=server_uri, name=name, license=license, category= category)
     client.register()
+    client.taxi_login(license)
+
+
+
