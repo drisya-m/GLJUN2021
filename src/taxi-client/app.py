@@ -13,14 +13,23 @@ import random
 from apiclient import ApiClient
 import uuid
 import random
+import argparse
 
 
-TAXI_COUNT = 50
-SERVER_URI = 'http://127.0.0.1:5000'
+# Initializing Parser
+parser = argparse.ArgumentParser(description='Taxi Registration')
 
-for index in range(0, TAXI_COUNT):
+#Adding argument
+parser.add_argument('--count', type=int, help='taxi count')
+parser.add_argument('--uri', type=str, help='server uri')
+args = parser.parse_args()
+
+taxi_count = args.count
+server_uri = args.uri
+
+for index in range(0, taxi_count):
     name = f'taxi driver {index}'
     license = uuid.uuid4().hex[:6].upper()
     category = random.choice(ApiClient.taxi_types())
-    client = ApiClient(uri=SERVER_URI, name=name, license=license, category= category)
+    client = ApiClient(uri=server_uri, name=name, license=license, category= category)
     client.register()

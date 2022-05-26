@@ -29,7 +29,7 @@ class ApiClient:
 
 
     def register(self):
-        print(f'registering new taxi for {self.taxi_id}')
+        print(f'registering new taxi for {self.license}')
         request_url = f'{self.uri}/register'
         payload = {'type': 'taxi', 'license': self.license, 'name': self.name, 'category': self.category}
         response = requests.request(method="POST", url=request_url, json=payload,
@@ -40,6 +40,7 @@ class ApiClient:
         self.secret = data['secret']
         print(f'{self.license} registered with user id {self.taxi_id} and secret {self.secret}')
 
-    def taxi_types(self) -> set:
-        return {'MINI', 'ECONOMY', 'SEDAN', 'LUXURY', 'ROYAL'}
+    @classmethod
+    def taxi_types(cls):
+        return ['MINI', 'ECONOMY', 'SEDAN', 'LUXURY', 'ROYAL']
 
