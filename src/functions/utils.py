@@ -17,12 +17,8 @@ import socket
 
 import boto3
 
-from database_driver import DatabaseDriver
-from jwthelper import JwtHelper
-from mqtthelper import MqttClient
+from core import DatabaseDriver, JwtHelper, MqttClient
 
-# Global Mqtt Client
-_mq_client: MqttClient = None
 # Global Database Drive
 _db_driver: DatabaseDriver = None
 
@@ -85,6 +81,8 @@ def get_mqtt_public_host() -> str:
 def get_mongo_uri() -> str:
     if os.environ.get('mode') == 'LOCAL':
         return ''
+    if os.environ.get('mode') == 'IN_MEMORY':
+        return ''
     ssm = boto3.client('ssm')
     parameter = ssm.get_parameter(Name=os.environ['SSM_MONGO_URI'], WithDecryption=False)
     return parameter['Parameter']['Value']
@@ -103,14 +101,7 @@ def is_connected(hostname, port):
 
 
 def get_mqtt_client() -> MqttClient:
-    global _mq_client
-    if _mq_client is None:
-        # get host
-        mqtt_host = get_mqtt_private_host()
-        # create uuid for the taxi to subscribe to
-        _mq_client = MqttClient(host=mqtt_host)
-        _mq_client.connect()
-    return _mq_client
+    return MqttClient(host=get_mqtt_private_host(), name='lambda')
 
 
 def get_db_driver() -> DatabaseDriver:
@@ -126,23 +117,31 @@ def get_db_driver() -> DatabaseDriver:
 def is_valid_location(latitude, longitude) -> bool:
     if not isinstance(latitude, (float, int)) or not isinstance(longitude, (float, int)):
         return False
-    if latitude > 90.0 or latitude < -90.0:
+    if latitude > 180.0 or latitude < -180.0:
         return False
-    if longitude > 180.0 or longitude < -180.0:
+    if longitude > 90.0 or longitude < -90.0:
         return False
     return True
 
 
 def unauthorized() -> dict:
-    return respond(401, "unauthorized", {})
+    return respond(401, {"msg": "unauthorized"}, {})
 
 
 def bad_request() -> dict:
-    return respond(401, "bad request", {})
+    return respond(401, {"msg": "bad request"}, {})
 
 
 def ok_request() -> dict:
-    return respond(200, "", {})
+    return respond(200, {"msg": "ok"}, {})
+
+
+def ok_response(body: dict) -> dict:
+    return respond(200, body, {})
+
+
+def server_error() -> dict:
+    return respond(500, {"msg": "server error"}, {})
 
 
 def taxi_types() -> set:

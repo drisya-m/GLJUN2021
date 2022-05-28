@@ -8,17 +8,13 @@
 # @author Anirudh Kushwah
 # @since 2022.05
 #
-import json
 import random
 
 import paho.mqtt.client
 from paho.mqtt import client as mqtt_client
-from paho.mqtt.packettypes import PacketTypes
-from paho.mqtt.properties import Properties
 
 
 class MqttClient:
-
     # host
     host: str
     # port
@@ -38,8 +34,10 @@ class MqttClient:
         client.connect(self.host, self.port)
         self.client = client
 
-    def send_to_topic(self, topic: str, message: dict):
-        properties = Properties(PacketTypes.PUBLISH)
-        properties.MessageExpiryInterval = 150
-        print(f'sending message to topic {topic} {json.dumps(message)}')
-        self.client.publish(topic=topic, payload=json.dumps(message), retain=True, properties=properties)
+    def subscribe(self, topic: str, fn):
+        print(f'subscribing to topic {topic}')
+        self.client.on_message = fn
+        self.client.subscribe(topic=topic)
+
+    def close(self):
+        self.client.disconnect()

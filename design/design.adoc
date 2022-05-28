@@ -27,7 +27,7 @@ There are three actors in whole project representing three real world entities.
 3. _User_: A client that represents a person who wants to hire a taxi for travel. A registered user can ask for an
    available taxi nearby
 
-There are three distinct categories of communication between clients (user/taxi) and server.
+There are two distinct categories of communication between clients (user/taxi) and server.
 
 1. *_Synchronous Requests_*: These are requests by clients which requires immediate responses with blocking I/O. Example
    of such requests are _login_, _logout_, _cancel_taxi_, _register_ and so on. Since these are less frequently used, it
@@ -37,11 +37,6 @@ There are three distinct categories of communication between clients (user/taxi)
    in nature. Message Queueing protocol `MQTT` based endpoint can serve data transfer between client and server for
    these requests. Example data transfer could be _location update_ sent by taxi, _new user request_ assigned to a taxi,
    _changes in ongoing ride_, _cancellation of a ride by user_ and so on.
-3. *_Short Term Continuous Communication_*: These are data exchanges which are done over short time and are frequent
-   in nature. A `WebSocket` based endpoint can serve data transfer between client and server for these requests. This
-   could be used for sending updates when a user _searches for taxi ride_. A user request can be kept live until a taxi
-   is assigned for user request.
-
 {nbsp}
 
 === `High Level Organization`
@@ -53,16 +48,13 @@ and are explained in natural order of the numbering.
 
 1. *API Gateway (ReST):* A HTTP endpoint that serves the synchronous requests to register a user or taxi in the system.
    Requests are forwarded to a Lambda which internal does the required validations and creates a new entry in database.
-2. *SNS Topic(s):* These SNS Topics that are exposed over internet. Each topic allows queue
-   based communication with a taxi. SNS allows large number of clients to be subscribed, it becomes possible to
-   scale clients simply by adding more topics or partitions. Taxi sends location updates by publishing messages into one
-   of these _topics_. Also, taxi subscribes to an exclusive topic to send and read exclusive messages for it
+2. *MQTT Broker(s):* These MQTT brokers are exposed over internet. Each topic allows pub/sub based communication from
+   server to clients. Since MQTT are efficient in keeping long connections with minimal overhead, it provides an
+   excellent mechanism to allow clients to read async communication from server. Since MQTT Brokers can be scaled,
+   design has been keep simple to be able to use multiple clusters if needed.
 3. *Lambda Functions:* Used to perform logic on the request incoming from taxi or user
-4. *User Database:* Houses data for registered Users and Taxis along with some metadata. A document database like
-   _MongoDb_ or _DynamoDb_ would be an ideal candidate for these operations
-5. *GeoSpatial Data:* A DB or Cache that supports GeoSpatial queries. Possible candidates are MongoDb, ElastiCache or
-   Redis Cache
-6. *Status Data:* In-Memory cache that holds status for users, taxi and current rides
+4. *GeoSpatial Capable Database:* Houses data for whole system. It can be a DB or Persistent Cache that supports
+   GeoSpatial queries. Possible candidates are MongoDb, ElastiCache or Redis Cache
 
 {nbsp}
 
@@ -74,16 +66,12 @@ A user and taxi needs to be registered within the system to be able to use the s
 becomes the first interaction of user with the system. The flow goes like below
 
  1. User/Taxi makes a `HTTP POST` call to `/register` Api with JSON payload. Payload contains specific information
-    about a new user or taxi
- 2. Request is recieved by API Gateway and is routed to a _register lambda_ function
- 3. Register Lambda function does the validation for duplicates and integrity
- 4. On validation success, a new record is made in the Mongo Db that will serve as a store for user and taxi
- 5. A success response is sent back with assigned User Id and possibly a Token
+    about a new user or taxi. Request is recieved by API Gateway and is routed to a _register lambda_ function
+ 2. Register Lambda function does the validation and creates a record in database. It also generates a random _secret_
+   for each profile which provides security via `JWT`
+ 3. A success response is sent back with assigned `id` and a `secret`
 
 On a _success_ response client is supposed to persist the data locally along with the assigned `Id`.
-
-_Extension Point:_ As part of payload, Client can send a Public Key that can be stored in Mongo Record. This Public Key,
-then becomes the basis for `JWT` based authentication.
 
 === `API: Taxi Login`
 
@@ -92,59 +80,58 @@ image::img/flow_taxi_login.png[]
 Once a taxi successfully registers with system, it gets an `Id` and a `Token`. Using these two taxi can start or stop
 getting pickup requests from system. The flow goes like below;
 
-1. Taxi makes a `POST /login` call with below structure;
-  - `taxi_id` as a Header
-  - Security token as header `X-Token`
-2. Request is received by API Gateway endpoint. Then it is routed to Login Lambda
-3. Login Lambda validates the current status and updates the status data marking the taxi as available for new requests.
-   A random `uuid` is assigned to the taxi which marks the _topic name_ till taxi logs off. This _uuid_ is stored in DB.
-   _uuid_ and _mqtt host_ is then sent to taxi so that it can listen to the topic for new requests.
-4. Okay response is sent back to Taxi indicating a successful login for taxi
-5. Taxi client then subscribes to an exclusive topic `taxi/<uuid>` to enable exclusive communication channel
-6. Taxi client then starts publishing periodic location messages onto the topic `topic/taxi-location`
-7. Location messages are served by a Location Lambda. A SQS Queue invokes Lambda for batches of MQTT messages. This
-   lambda first verifies that the Taxi is still logged in using status data
-8. If it is online, the current location is written into the _Geo Spatial Data_
+1. Taxi makes a `POST /login` call received by API Gateway endpoint. Then it is routed to _Login Lambda_ with below
+   structure;
+  - `taxi_id` as a Header `X-Taxi-Id`
+  - A `HS256` based JWT token as header `X-Token`
 
-Once taxi wants to stop serving request, a `/logoff` Api call is made which is routed to same Login Lambda. Once the
-request is validated, the taxi entry is removed from _status data_ and exlusive topic `taxi/<uuid>` is deleted. Any
-further location updates will be then discarded.
+2. Login Lambda validates the _token_ using _secret_ stored in database. A _random_ topic name is generated for this
+   taxi until a _logoff_ call is made by the taxi. This _topic name_ will be used to send messages to taxi from server.
+   Along with  the _topic name_, a _mqtt server host_ is also sent which represents the address for broker. This allows
+   us to distribute load on multiple brokers if needed to scale
+3. Taxi client reads the _mqtt host_ and _topic name_ and subscribe to the topic
+4. Taxi then starts making _location update_ call to the Api Gateway using HTTPs REST calls
+5. For each update call, the current Geo Location is stored in Database. This location will be used for taxi lookups
+
+Once taxi wants to stop serving request, a `/logoff` Api call is made which is routed to a _Logoff Lambda_. Once the
+request is validated, the taxi is _marked_ as `OFFLINE`. Such _offline_ taxi are not used for taxi allocation.
 
 
 === `API: Taxi Booking`
 
 image::img/flow_taxi_booking.png[]
 
-Once a user successfully registers with system, it gets an `Id` and a `Token`. Using these two, user can start booking
-taxi from system. The flow goes like below;
+Once a user successfully registers with system, it gets an `Id` and a `Secret`. Using these two, user can start booking
+taxi from system. It is a 2-Step process and the flow goes like below;
 
-1. User makes a `POST /taxi-request` call with below structure;
-  - `user_id` as a Header
-  - `jwt` as a Header
-  - JSON Payload as the formulated JWT Payload
-
-   {
-     "user_id": "<string:id>",
-     "expiry": <int:epoch>,
-     "nonce": "<string:random>",
-     "location" : {
-        "longitude": "<decimal:long>",
-        "latidude": "<decimal:lat>"
-     }
-   }
-
-2. Request is received by API Gateway endpoint and is validated by an authentication lambda. Then it is routed to a
-   Taxi Request Lambda
-3. Lambda validates the location and fires `nearest K` query on _Geo Spatial Data_ which outputs upto `K` taxi `Id`
-4. Lambda then sends a pickup request to all nearest taxis via `taxi/<uuid>` topics
-5. The first positive response from the taxi is considered as a valid selection
-6. When the accepting confirmation arrives within time limit, taxi can be assigned the trip
-7. Taxi status is updated with the trip in progress flag and trip id
-8. Connection is closed indicating request service complete. In case no taxi was assigned, user can retry after sometime
-
-Trip information is stored in _status data_ against user and taxi so that we do not assigned any other trip to taxi or
-user.
-
+1. User makes a `POST /createride` call with below structure;
+  - `user_id` as a Header `X-User-Id`
+  - `jwt` as a Header `X-Token`
+  - JSON Payload containing _user location_
+2. Request is handled by _create ride lambda_. It generates a random, _topic name_ for the ride request, creates `ride`
+   record in database containing, user id, location, topic name and status. All of these are sent back to client along
+   with _mqtt broker_ address
+3. Client reads the broker address and topic name from the response and subscribes to it for updates
+4. Client makes an authenticated ReST `POST /findtaxi` call to make server look for taxi
+5. Request is served a _find taxi lambda_ which does the heavy lifting in below manner
+  - It reads the ride data and finds the available taxis
+  - It sends a ride request via a message onto _mqtt broker topic_ as saved in taxi record
+  - It then does a poll on the _ride record_ to be updated by an available taxi
+  - If a taxi accepts the request, a confirmation is sent to user by publishing a message onto the _ride topic_
+  - If no taxi accepts the request, a confirmation is sent after a timeout of 2 minutes
+6. An available _taxi client_ will be listening on a taxi topic as assigned by the server. For a taxi request, if a taxi
+   is nearby, a message will be sent with ride details onto this _taxi topic_. The taxi client will read this message
+   from _mqtt topic_ and may decide to _accept_ or _reject_ the request. In any of the case it makes a _accept_ call.
+   The _accept_ call is served by a Lambda which updates the client about a rejection or acceptance by a taxi. If the
+   taxi is the one to accept a ride, _ride_ record is update to mark the taxi assigned and status of the record is
+   updated. In the next poll, the _find taxi lambda_ will return a success in taxi allocation for the request. A
+   confirmation is sent to _taxi client_ indicating that it was the first one to respond and hence it is assigned to
+   the ride
+7. Taxi Client then can start and then end the ride. It makes an authenticated `POST /ride` call that is served by a
+   _ride lambda_. When a ride starts, ride record is updated and user client is notified via _mqtt user topic_.
+   Similarly, when the taxi ends the ride, it sends a _ride update_ onto the same ReST call. The _ride lambda_ then reads
+   the ride completion and then it updates the taxi status and ride status. A ride completion message is sent to the
+   _mqtt user topic_ so that user client can consider a ride to be completed
 
 == Envelope Size Estimation: Taxi
 

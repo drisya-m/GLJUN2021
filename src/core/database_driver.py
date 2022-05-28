@@ -8,6 +8,7 @@
 # @author Shanger Sivaramachandran
 # @since 2022.05
 #
+import copy
 import os
 
 import pymongo
@@ -35,6 +36,8 @@ class DatabaseDriver:
     def __init__(self, database_name: str, mongo_uri: str):
         if os.environ.get('mode') == 'LOCAL':
             self.client = pymongo.MongoClient("mongodb://127.0.0.1", 27017)
+        elif os.environ.get('mode') == 'IN_MEMORY':
+            self.client = pymongo_inmemory.MongoClient("mongodb://127.0.0.1", 27017)
         else:
             self.client = pymongo.MongoClient(mongo_uri)
         self.database_name = database_name
@@ -59,11 +62,10 @@ class DatabaseDriver:
                 print(f"collection {col_name} exists")
             else:
                 print(f"collection {col_name} will be created")
-                # Create indexes here!
-                collection: Collection = self.__database[COL_RIDES]
-                collection.create_index('taxi_id')
-                collection.create_index('user_id')
-                collection.create_index('status')
+
+        # Create indexes here!
+        self.__database[COL_TAXI].create_index([("location", pymongo.GEOSPHERE)])
+        self.__database[COL_TAXI].create_index('status')
 
     @staticmethod
     def __get_all_collections() -> list:
@@ -88,7 +90,7 @@ class DatabaseDriver:
     # Update Method Starts from Here
     def patch_by_query(self, col_name: str, query: dict, patch: dict) -> int:
         col: Collection = self.__database[col_name]
-        return col.update_one(filter=query, update={"$set" : patch}).modified_count
+        return col.update_one(filter=query, update={"$set": patch}).modified_count
 
     def patch_by_id(self, col_name: str, record_id: str, patch: dict) -> bool:
         return self.patch_by_query(col_name=col_name, query={'_id': ObjectId(record_id)}, patch=patch) == 1
@@ -101,6 +103,21 @@ class DatabaseDriver:
 
     def patch_ride(self, ride_id: str, patch: dict) -> bool:
         return self.patch_by_id(col_name=COL_RIDES, record_id=ride_id, patch=patch)
+
+    def patch_taxi_filter(self, taxi_id: str, query: dict, patch: dict) -> bool:
+        q_filter = copy.deepcopy(query)
+        q_filter.update({'_id': ObjectId(taxi_id)})
+        return self.patch_by_query(col_name=COL_TAXI, query=q_filter, patch=patch) == 1
+
+    def patch_user_filter(self, user_id: str, query: dict, patch: dict) -> bool:
+        q_filter = copy.deepcopy(query)
+        q_filter.update({'_id': ObjectId(user_id)})
+        return self.patch_by_query(col_name=COL_USER, query=q_filter, patch=patch) == 1
+
+    def patch_ride_filter(self, ride_id: str, query: dict, patch: dict) -> bool:
+        q_filter = copy.deepcopy(query)
+        q_filter.update({'_id': ObjectId(ride_id)})
+        return self.patch_by_query(col_name=COL_RIDES, query=q_filter, patch=patch) == 1
 
     #
     # Create a new record

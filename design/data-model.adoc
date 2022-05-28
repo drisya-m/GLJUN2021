@@ -1,4 +1,5 @@
 == DATA MODEL & API CONTRACTS
+
 '''
 
 :toc:
@@ -9,11 +10,21 @@
 ----
 collection=taxi_profile
 {
-    "_id": "Auto Generated Id",
-    "secret": "Server Assigned Secret",
-    "type": "taxi reported type (ALL IN UPPER CAPS)",
-    "name" : "driver name",
-    "license": "taxi number indexed (unique)"
+  "type": "LUXURY",
+  "name": "taxi-0",
+  "license": "KA/8312/56",
+  "secret": "8d1b9081-d2dc-4db0-b331-8c62a76e62b8",
+  "login_time": 1653500830,
+  "status": "ONLINE",
+  "topic": "ani/taxi/05654e1f-9f70-4f4e-80bb-47d4c83e0162",
+  "location": {
+    "type": "Point",
+    "coordinates": [
+      13.044225221247034,
+      77.51599622853483
+    ]
+  },
+  "updated_on": 1653502058
 }
 ----
 
@@ -23,29 +34,29 @@ collection=taxi_profile
 ----
 collection=user_profile
 {
-    "_id": "Auto Generated Id",
-    "secret": "Server Assigned Secret",
-    "name": "client reported user name (NO spaces)"
+    "name": "taxi user 0",
+    "secret": "82bdf52d-4362-4cbe-a727-e93c82892fd3"
 }
 ----
 
-=== Model: TaxiStatus
+=== Model: Ride
 
 [json]
 ----
-collection=taxi_status
+collection=rides
 {
-    "_id": "Auto Generated Id",
-    "taxi_id": "indexed taxi id (unique constraint)",
-    "location": {
-        "type": "Point",
-        "coordinates": [<float>, <float>]
-    },
-    "riding_with": "optional_user_id (unique, nullable, indexed)"
+  "user_id": "628e5835ac9d7bbb25b1a573",
+  "created_on": 1653495861,
+  "topic": "ani/ride/9686f4ff-ba91-4ea1-ab61-3aa7e8679461",
+  "status": "COMPLETED",
+  "taxi_id": "628e5831ac9d7bbb25b1a572",
+  "updated_on": 1653495864,
+  "completed_on": 1653495883
 }
 ----
 
 === Api Contract: Register User
+
 '''
 
 [source]
@@ -64,6 +75,7 @@ Response: JSON
 ----
 
 === Api Contract: Register Taxi
+
 '''
 
 [source]
@@ -72,10 +84,8 @@ Request: POST /register
 Body : {
     "type" : "taxi",
     "name" : "taxi driver name",
-    "taxi" : {
-        "license": "unique number",
-        "type": "taxi class"
-    }
+    "taxi_type" : "taxi class",
+    "license": "unique number"
 }
 
 Response: JSON
@@ -85,14 +95,16 @@ Response: JSON
 }
 ----
 
-=== Api Contract: Find Taxi
+=== Api Contract: Create Ride
+
 '''
 
 [source]
 ----
-Request: POST /findtaxi
+Request: POST /createride
 Header:
- Token: <JWT>
+ X-User-Id: <Id>
+ X-Token: <JWT>
 Body : {
     "type" : "taxi type",
     "location" : [<float>, <float>]
@@ -100,78 +112,121 @@ Body : {
 
 Response: JSON
 {
-    "taxi_id": "string",
-    "license": "number",
-    "name": "taxi driver name"
+    "ride_id": "string",
+    "topic": "topic name to subscribe for ride update",
+    "host": "mqtt host name"
+}
+----
+
+=== Api Contract: Find Taxi
+
+'''
+
+[source]
+----
+Request: POST /findtaxi
+Header:
+ X-User-Id: <Id>
+ X-Token: <JWT>
+Body : {
+   "ride_id": "string"
+}
+
+Response: JSON
+{
+    "success": <boolean>
 }
 ----
 
 === Api Contract: Login | Logoff
+
 '''
 
 [source]
 ----
 Request: POST /login | POST /logoff
 Header:
- Token: <JWT>
+ X-Taxi-Id: <taxi_id>
+ X-Token: <JWT>
 
 Response: JSON
 {
-    "taxi_uuid": "string",
+    "taxi_id": "string",
     "host": "mqtt host to subscribe"
 }
-Headers:
+----
+
+=== Api Contract: Accept Ride
+
+'''
+
+[source]
+----
+Request: POST /accept
+Header:
  X-Taxi-Id: <taxi_id>
+ X-Token: <JWT>
+
+Request: JSON
+{
+    "ride_id": "string",
+    "accepted": <bool>
+}
+
+Response: JSON
+{
+    "success": <boolean>
+}
 ----
 
+=== Api Contract: Ride Update
 
-=== SNS Payload: Taxi Location Update
+'''
+
+[source]
+----
+Request: POST /ride
+Header:
+ X-Taxi-Id: <taxi_id>
+ X-Token: <JWT>
+
+Request: JSON
+{
+    "ride_id": "string",
+    "action": "string <start|end>"
+}
+
+Response JSON:
+{
+    "success": <boolean>
+}
+----
+
+=== Api Contract: Taxi Location Update
+
+'''
+
+[source]
+----
+Request: POST /ride
+Header:
+ X-Taxi-Id: <taxi_id>
+ X-Token: <JWT>
+
+Request: JSON
+{
+    "location" : [<lat>, <long>]
+}
+----
+
+=== MQTT Payload: Ride Request to Taxi
 '''
 
 [source]
 ----
 {
-    "type": "location_update",
-    "taxi_id": "taxi id",
-    "location": [<float>, <float>],
-    "token": "JWT"
+    "type" : "ride_request",
+    "ride_id": "string",
+    "location" : [<lat>, <long>]
 }
 ----
-
-=== SNS Payload: Taxi Pickup Request
-'''
-
-[source]
-----
-{
-    "type": "pickup_request"
-    "user_id": "user id",
-    "location": [<float>, <float>]
-}
-----
-
-=== SNS Payload: Taxi Pickup Response
-'''
-
-[source]
-----
-{
-    "type": "pickup_response"
-    "user_id": "user id",
-    "response": <boolean>
-}
-----
-
-=== SNS Payload: Taxi Pickup Confirmation
-'''
-
-[source]
-----
-{
-    "type": "ride_confirmation"
-    "user_id": "user id",
-    "taxi_id": "taxi_id",
-    "ride_id": "ride_id"
-}
-----
-

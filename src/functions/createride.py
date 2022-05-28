@@ -9,9 +9,11 @@
 # @since 2022.05
 #
 import time
+import uuid
 
-from utils import *
-from database_driver import COL_TAXI
+from .utils import *
+from core import DatabaseDriver
+from core.database_driver import COL_TAXI
 
 
 def handler(event, context):
@@ -36,25 +38,13 @@ def handler(event, context):
     if not is_valid_location(location[0], location[1]):
         return bad_request()
 
-    # Find the nearest taxi(s), and notify them all!
-    taxi_list: list = db_driver.run_query(col_name=COL_TAXI, query={
-        'status': 'ONLINE',
-        'location': {
-            '$nearSphere': {
-                '$geometry': {
-                    'type': "Point",
-                    'coordinates': location
-                },
-                '$maxDistance': 5000}}}, limit=10)
-    # send failed!
-    if not taxi_list:
-        return respond(200, {"msg": "no nearby taxi"}, {})
-
     # Create a new Record in Db representing a request from user!
+    ride_topic = f'{get_namespace()}/ride/{str(uuid.uuid4())}'
     ride_id: str = db_driver.create_ride_record(ride={
         'user_id': user_id,
         'created_on': int(time.time()),
-        'status': 'REQUESTED'})
-    # @TODO wait for 3 minutes and wait for a assigned status, else fail!
-    # Wait till the taxi accepts the ride
-    return respond(200, {"ride_id": ride_id}, {})
+        'topic': ride_topic,
+        'status': 'REQUESTED',
+        'location': location
+    })
+    return ok_response({"ride_id": ride_id, "topic": ride_topic, "host": get_mqtt_public_host()})

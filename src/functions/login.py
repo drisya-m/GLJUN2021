@@ -11,7 +11,8 @@
 import time
 import uuid
 
-from utils import *
+from .utils import *
+from core import DatabaseDriver, MqttClient
 
 
 def handler(event, context):
@@ -28,15 +29,21 @@ def handler(event, context):
         respond(401, "unauthorized", {})
     # create uuid for the taxi to subscribe to
     taxi_uuid = str(uuid.uuid4())
+    topic = f'{get_namespace()}/taxi/{taxi_uuid}'
     # patch
-    if not db_driver.patch_taxi(taxi_id=taxi_id, patch={"uuid": taxi_uuid, "login_time": int(time.time())}):
+    if not db_driver.patch_taxi(taxi_id=taxi_id, patch={
+        "topic": topic,
+        "login_time": int(time.time()),
+        "status": "ONLINE"
+    }):
         return respond(500, "", {})
     # publish a message to this uuid
     mqtt_client: MqttClient = get_mqtt_client()
     # Respond with taxi uuid
     print(f"login request from taxi {taxi_id} was set to uuid {taxi_uuid}")
-    topic = f'{get_namespace()}/taxi/{taxi_uuid}'
+    mqtt_client.connect()
     mqtt_client.send_to_topic(topic=topic, message={"msg": "welcome"})
+    mqtt_client.client.disconnect()
     return respond(200,
                    {
                        "host": get_mqtt_public_host(),

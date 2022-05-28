@@ -9,9 +9,9 @@
 # @since 2022.05
 #
 import time
-import uuid
 
-from utils import *
+from core import DatabaseDriver, MqttClient
+from .utils import *
 
 
 def handler(event, context):
@@ -22,26 +22,29 @@ def handler(event, context):
     existing_taxi = db_driver.get_taxi(taxi_id=taxi_id)
     # if no taxi found, return 401
     if not existing_taxi:
-        return respond(401, "unauthorized", {})
+        return unauthorized()
     # validate jwt
     if not validate_token(event, identity=taxi_id, secret=existing_taxi['secret']):
-        respond(401, "unauthorized", {})
-    existing_taxi_uuid = existing_taxi.get('uuid')
+        return unauthorized()
+    existing_taxi_topic = existing_taxi.get('topic')
     # if no uuid, assume logged off already
-    if not existing_taxi_uuid:
-        return respond(400, "already logged off", {})
+    if not existing_taxi_topic:
+        return bad_request()
     # update
-    if not db_driver.patch_taxi(taxi_id=taxi_id, patch={"uuid": "", "logoff_time": int(time.time())}):
-        return respond(500, "", {})
+    if not db_driver.patch_taxi(taxi_id=taxi_id, patch={
+        "logoff_time": int(time.time()),
+        "status": "OFFLINE"
+    }):
+        return server_error()
     # publish a message to this uuid
     mqtt_client: MqttClient = get_mqtt_client()
     # Respond with taxi uuid
-    print(f"logoff request from taxi {taxi_id} was reset from uuid {existing_taxi_uuid}")
-    mqtt_client.send_to_taxi(taxi_uuid=existing_taxi_uuid, message={"msg": "goodbye"})
+    print(f"logoff request from taxi {taxi_id} was reset from topic {existing_taxi_topic}")
+    mqtt_client.send_to_topic(topic=existing_taxi_topic, message={"msg": "goodbye"})
     return respond(200,
                    {
                        "host": get_mqtt_public_host(),
-                       "taxi_uuid": existing_taxi_uuid
+                       "topic": existing_taxi_topic
                    }, {
                        "X-Taxi-Id": taxi_id
                    })
