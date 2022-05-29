@@ -8,6 +8,7 @@
 # @author Drisya Mathilakath
 # @since 2022.05
 #
+import argparse
 import random
 from random import uniform
 from joblib import Parallel, delayed
@@ -15,27 +16,29 @@ from joblib import Parallel, delayed
 from clients.user import UserApiClient
 from core import LocationBound
 
+# Initializing Parser
+parser = argparse.ArgumentParser(description='taxi client')
+parser.add_argument('--count', type=int, help='number of taxi to run')
+parser.add_argument('--uri', type=str, help='server url to connect to')
+parser.add_argument('--latitude-min', type=str, help='minimum latitude to run with')
+parser.add_argument('--latitude-max', type=str, help='maximum latitude to run with')
+parser.add_argument('--longitude-min', type=str, help='minimum longitude to run with')
+parser.add_argument('--longitude-max', type=str, help='maximum longitude to run with')
+args = parser.parse_args()
 
-def bound():
-    bound = LocationBound()
-    bound.min_latitude = 12.87
-    bound.max_latitude = 13.21
-    bound.min_longitude = 77.34
-    bound.max_longitude = 77.87
-    return bound
+# create bound
+bound = LocationBound()
+bound.min_latitude = float(args.latitude_min)
+bound.max_latitude = float(args.latitude_max)
+bound.min_longitude = float(args.longitude_min)
+bound.max_longitude = float(args.longitude_max)
 
-
-USER_COUNT = 1
-MAX_LATITUDE = 60
-MAX_LONGITUDE = 60
-SERVER_URI = 'http://127.0.0.1:5000'
 
 user_list = list()
-
-for index in range(0, USER_COUNT):
+for index in range(0, args.count):
     name = f'user-{index}'
-    client = UserApiClient(uri=SERVER_URI, name=name, bound=bound())
+    client = UserApiClient(uri=args.uri, name=name, bound=bound)
     client.register()
     user_list.append(client)
 
-Parallel(n_jobs=USER_COUNT, backend='threading')(delayed(client.ride)() for client in user_list)
+Parallel(n_jobs=args.count, backend='threading')(delayed(client.ride)() for client in user_list)
