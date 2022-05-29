@@ -129,7 +129,7 @@ def unauthorized() -> dict:
 
 
 def bad_request() -> dict:
-    return respond(401, {"msg": "bad request"}, {})
+    return respond(400, {"msg": "bad request"}, {})
 
 
 def ok_request() -> dict:
