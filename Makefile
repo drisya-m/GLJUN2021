@@ -41,6 +41,12 @@ undeploy: check-env
 	@echo "running undeploy"
 	aws cloudformation delete-stack --stack-name $(GLNAME)-taxi-service
 
+client: check-env
+	@echo "running clients"
+	API=$(shell aws cloudformation describe-stacks --stack-name $(GLNAME)-taxi-service --query 'Stacks[0].Outputs[0].OutputValue'); \
+	python3 ./src/taxi_app.py --uri $$API --count $(COUNT) --latitude-min 12.87 --latitude-max 13.21 --longitude-min 77.34 \
+	  --longitude-max 77.87
+
 cleanup: check-env
 	@echo "running cleanup"
 	aws s3 rm s3://$(BUCKET)/build/$(GLNAME)/ --recursive

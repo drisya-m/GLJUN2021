@@ -65,3 +65,7 @@ Resources:
         RideUpdateLambdaArn: !GetAtt LambdaStack.Outputs.RideUpdateLambdaArn
         CleanupLambdaArn: !GetAtt LambdaStack.Outputs.CleanupLambdaArn
         ApiGatewayStageName: 'v1'
+
+Outputs:
+  ApiGatewayEndpoint:
+    Value: !GetAtt ApiStack.Outputs.ApiGatewayEndpoint
