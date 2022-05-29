@@ -79,8 +79,8 @@ class TaxiApiClient:
         self.mqtt_client.close()
 
     def send_location(self, latitude, longitude):
-        self.log.log('sending location update: {}, {}', latitude, longitude)
-        data: dict = self.send_authenticated('location', {'location': [latitude, longitude]})
+        self.log.log('sending location update: {}, {}', longitude, latitude)
+        data: dict = self.send_authenticated('location', {'location': [longitude, latitude]})
         self.log.log('server response to location request: {}', data)
 
     # handler for the message communication from server

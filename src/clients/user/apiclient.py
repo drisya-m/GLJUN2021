@@ -66,9 +66,9 @@ class UserApiClient:
     def ride(self):
         current_latitude = random.uniform(self.bound.min_latitude, self.bound.max_latitude)
         current_longitude = random.uniform(self.bound.min_longitude, self.bound.max_longitude)
-        self.log.log('create ride request: location={}, {} type={}', current_latitude, current_longitude,
+        self.log.log('create ride request: location={}, {} type={}', current_longitude, current_latitude,
                      self.taxi_type)
-        payload = {'location': [current_latitude, current_longitude], 'type': self.taxi_type}
+        payload = {'location': [current_longitude, current_latitude], 'type': self.taxi_type}
         data: dict = self.send_authenticated('createride', payload)
 
         ride_topic = data.get('topic')
