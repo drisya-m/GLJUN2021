@@ -152,7 +152,8 @@ Header:
 Response: JSON
 {
     "taxi_id": "string",
-    "host": "mqtt host to subscribe"
+    "host": "mqtt host to subscribe",
+    "topic" : "topic to subscribe until logoff"
 }
 ----
 
