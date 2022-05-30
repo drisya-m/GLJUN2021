@@ -1,0 +1,70 @@
+=== Intermediate Submission [30/May/2022]
+
+'''
+
+
+==== #1: Identify and configure your main data storage and central processing system
+
+- Status: COMPLETED
+- Storage engine has been identified as Mongo Atlas
+- Central Processing system is based on API-Gateway/Lambda stack
+- For asynchronous communication between Server and Client, a MQTT Broker deployed on a EC2 machine has been used
+- System Design and Architecture has been documented under `design` folder
+
+==== #2: Define the structure for your area boundary
+
+- Right now we have used a rectangular bound with four parameters
+** Min & Max Latitude
+** Min & Max Longitude
+- Taxi and Clients are free to move outside these bounds
+- Server will filter Taxi and User as "Out of Service" area (subject to bugs in code)
+- We are looking to extend to a Polygon which can be used with `intersection` to find if a point is within Polygon
+
+==== #3: Build the taxi simulator with natural-looking lat-long data generation
+
+- Taxi Client is ready and takes bound as input parameters (rectangular bound as of now)
+- It randomly chooses a location within bound to start with, then it slowly moves with displacement of `0.005` degrees
+
+==== #4: Identify and implement the means to transfer this data regularly to your central system
+
+- Location update is sent via an JWT authenticated ReST Api
+- Data is consumed by server using a Lambda which updates taxi location in the Mongo Document
+- The Location is stored as dictated by Mongo specs for `GeoSpatial` format
+
+==== #5: Ingest and store the taxi lat-long data appropriately
+
+- Latest location of a taxi is stored in a unique document in Mongo Db
+- Location Lambda (`functions/location.py`) reads the location from client request and stores in the appropriate format
+
+==== #6: Be able to show the stored data visually in a database UI or just through a utility code dumping data in some structured format based on time
+
+- We decided to use the Mongo Atlas as our data store
+- Implicitly it allows to visualize taxi location in a Map as a Chart in dashboard
+
+==== #7: Visually display a map-equivalent view of your area, showing taxi positions. As specified earlier, this doesn’t have to be a real map with general location data
+
+- Mongo Atlas provided this functionality
+
+&nbsp;
+
+=== NOTES FROM TEAM
+'''
+
+At this moment the code is ready with these functionalities (subject to bugs):
+
+* Registration support for Taxi and User
+* Async communication to Taxi and User via MQTT Broker
+* JWT based Authentication ReST Api
+* Randomized/One-Time MQTT Topics for Taxi Logins and User Requests
+* Location data ingestion from Taxi Client via ReST API
+* Live updates to User Client when booking for taxi
+* Taxi can choose to Accept or Reject a ride request. Race conditions handled by server in case of multiple taxi
+  accepting a request
+
+A few more nuggets;
+
+* Fully automated Cloud Formation Deployment of Server Stack
+* `make` based command execution to avoid human error in deployment
+* Stacks are based on `namespaces` that allows parallel stack in same account to run
+* A Flask App to emulate whole system end-to-end while testing locally
+
