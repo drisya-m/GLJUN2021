@@ -1,0 +1,226 @@
+=== Intermediate Submission [30/May/2022]
+
+'''
+
+
+==== #1: Identify and configure your main data storage and central processing system
+
+- Status: COMPLETED
+- Storage engine has been identified as Mongo Atlas
+- Central Processing system is based on API-Gateway/Lambda stack
+- For asynchronous communication between Server and Client, a MQTT Broker deployed on a EC2 machine has been used
+- System Design and Architecture has been documented under `design` folder
+
+==== #2: Define the structure for your area boundary
+
+- Right now we have used a rectangular bound with four parameters
+** Min & Max Latitude
+** Min & Max Longitude
+- Taxi and Clients are free to move outside these bounds
+- Server will filter Taxi and User as "Out of Service" area (subject to bugs in code)
+- We are looking to extend to a Polygon which can be used with `intersection` to find if a point is within Polygon
+
+==== #3: Build the taxi simulator with natural-looking lat-long data generation
+
+- Taxi Client is ready and takes bound as input parameters (rectangular bound as of now)
+- It randomly chooses a location within bound to start with, then it slowly moves with displacement of `0.005` degrees
+
+==== #4: Identify and implement the means to transfer this data regularly to your central system
+
+- Location update is sent via an JWT authenticated ReST Api
+- Data is consumed by server using a Lambda which updates taxi location in the Mongo Document
+- The Location is stored as dictated by Mongo specs for `GeoSpatial` format
+
+==== #5: Ingest and store the taxi lat-long data appropriately
+
+- Latest location of a taxi is stored in a unique document in Mongo Db
+- Location Lambda (`functions/location.py`) reads the location from client request and stores in the appropriate format
+
+==== #6: Be able to show the stored data visually in a database UI or just through a utility code dumping data in some structured format based on time
+
+- We decided to use the Mongo Atlas as our data store
+- Implicitly it allows to visualize taxi location in a Map as a Chart in dashboard
+
+==== #7: Visually display a map-equivalent view of your area, showing taxi positions. As specified earlier, this doesn’t have to be a real map with general location data
+
+- Mongo Atlas provided this functionality
+
+&nbsp;
+
+=== NOTES FROM TEAM
+'''
+
+At this moment the code is ready with these functionalities (subject to bugs):
+
+* Registration support for Taxi and User
+* Async communication to Taxi and User via MQTT Broker
+* JWT based Authentication ReST Api
+* Randomized/One-Time MQTT Topics for Taxi Logins and User Requests
+* Location data ingestion from Taxi Client via ReST API
+* Live updates to User Client when booking for taxi
+* Taxi can choose to Accept or Reject a ride request. Race conditions handled by server in case of multiple taxi
+  accepting a request
+
+A few more nuggets;
+
+* Fully automated Cloud Formation Deployment of Server Stack
+* `make` based command execution to avoid human error in deployment
+* Stacks are based on `namespaces` that allows parallel stack in same account to run
+* A Flask App to emulate whole system end-to-end while testing locally
+
+
+=== Sample Activity Logs
+
+[source]
+-----
+USER CLIENT LOGS
+================
+/Users/akushwah/Workspace/GLJUN2021/target/venv/bin/python /Users/akushwah/Workspace/GLJUN2021/src/user_app.py --uri http://127.0.0.1:5000 --count 1 --latitude-min 12.87 --latitude-max 13.21 --longitude-min 77.34 --longitude-max 77.87
+[user-0/MINI] registering this user with server
+[user-0/MINI] registered user: id=6293c671fd16db466688bfea secret=a0803173-5b91-4160-a039-6f0adc69385e
+[user-0/MINI] create ride request: location=77.61204065601096, 13.070764709642415 type=MINI
+[user-0/MINI] ride request accepted: topic=ani-gl/ride/da91a5c4-e324-48b3-b7c2-bc3128cefd36 host=localhost ride_id=6293c672fd16db466688bfeb
+[mqtt-user-0] connecting to mqtt server
+[mqtt-user-0] subscribing to topic=ani-gl/ride/da91a5c4-e324-48b3-b7c2-bc3128cefd36
+[user-0/MINI] message from server: found 1 nearby available taxi(s)
+[user-0/MINI] message from server: sending a ride request to taxi taxi-0
+[user-0/MINI] message from server: waiting for first acceptance by taxi
+[user-0/MINI] message from server: taxi 6293c660fd16db466688bfe7 accepted your request
+[user-0/MINI] message from server: taxi 6293c660fd16db466688bfe7 assigned to your request
+[user-0/MINI] message from server: your ride has started
+[user-0/MINI] message from server: waiting for first acceptance by taxi: remaining_time=110
+[user-0/MINI] taxi allocated for the ride: taxi_id=6293c660fd16db466688bfe7
+[mqtt-user-0] disconnecting from mqtt server
+
+Process finished with exit code 0
+-----
+
+[source]
+----
+TAXI CLIENT LOGS
+================
+/Users/akushwah/Workspace/GLJUN2021/target/venv/bin/python /Users/akushwah/Workspace/GLJUN2021/src/taxi_app.py --uri http://127.0.0.1:5000 --count 1 --latitude-min 12.87 --latitude-max 13.21 --longitude-min 77.34 --longitude-max 77.87
+[taxi-0] registering this taxi with server
+[taxi-0] registered taxi: id=6293c660fd16db466688bfe7 secret=192ba672-6963-4376-b974-8b956865cc4d
+[taxi-0] sending a login request to server
+[taxi-0] login response: host=localhost topic=ani-gl/taxi/f645a3e6-5b30-4c31-924e-9fa39f10421e
+[mqtt-taxi-0] connecting to mqtt server
+[mqtt-taxi-0] subscribing to topic=ani-gl/taxi/f645a3e6-5b30-4c31-924e-9fa39f10421e
+[taxi-0] sending location update: 77.6907254016738, 13.087381516446582
+[taxi-0] server response to location request: {'msg': 'ok'}
+[taxi-0] mqtt-message: {'type': 'ride_request', 'ride_id': '6293c672fd16db466688bfeb'}
+[taxi-0] ride request 6293c672fd16db466688bfeb was assigned to this taxi 6293c660fd16db466688bfe7
+[taxi-0] starting the ride 6293c672fd16db466688bfeb on this taxi
+[taxi-0] ending the ride 6293c672fd16db466688bfeb on this taxi
+----
+
+
+[source]
+----
+SERVER ACTIVITY LOGS (LOCAL HOSTED)
+===================================
+/Users/akushwah/Workspace/GLJUN2021/target/venv/bin/python "/Applications/PyCharm CE.app/Contents/plugins/python-ce/helpers/pydev/pydevd.py" --multiprocess --qt-support=auto --client 127.0.0.1 --port 53071 --file /Users/akushwah/Workspace/GLJUN2021/src/webapp/flask_app.py
+Connected to pydev debugger (build 221.5080.212)
+ * Serving Flask app 'flask_app' (lazy loading)
+ * Environment: production
+   WARNING: This is a development server. Do not use it in a production deployment.
+   Use a production WSGI server instead.
+ * Debug mode: off
+ * Running on http://127.0.0.1:5000 (Press CTRL+C to quit)
+Database ani-gl-taxiservicedb exists
+collection taxi_profile exists
+collection user_profile exists
+collection rides exists
+collection taxi_location_history will be created
+collection taxi_request_history will be created
+127.0.0.1 - - [29/May/2022 23:39:33] "POST /register HTTP/1.1" 200 -
+127.0.0.1 - - [29/May/2022 23:39:34] "POST /createride HTTP/1.1" 200 -
+127.0.0.1 - - [29/May/2022 23:39:35] "POST /findtaxi HTTP/1.1" 200 -
+127.0.0.1 - - [29/May/2022 23:39:35] "POST /register HTTP/1.1" 200 -
+login request from taxi 6293b6dffd16db466688bfde was set to uuid 059ca60f-dc23-440b-8e25-53ea1c70d078
+[mqtt-lambda] connecting to mqtt server
+[mqtt-lambda] publishing ephemeral message: topic=ani-gl/taxi/059ca60f-dc23-440b-8e25-53ea1c70d078 message={"msg": "welcome"}
+127.0.0.1 - - [29/May/2022 23:39:36] "POST /login HTTP/1.1" 200 -
+location update request from taxi 6293b6dffd16db466688bfde with location [77.57183191571062, 12.929518851533008]
+127.0.0.1 - - [29/May/2022 23:39:37] "POST /location HTTP/1.1" 200 -
+127.0.0.1 - - [29/May/2022 23:39:39] "POST /register HTTP/1.1" 200 -
+127.0.0.1 - - [29/May/2022 23:39:40] "POST /createride HTTP/1.1" 200 -
+127.0.0.1 - - [29/May/2022 23:39:41] "POST /findtaxi HTTP/1.1" 200 -
+127.0.0.1 - - [29/May/2022 23:39:44] "POST /register HTTP/1.1" 200 -
+127.0.0.1 - - [29/May/2022 23:39:44] "POST /createride HTTP/1.1" 200 -
+127.0.0.1 - - [29/May/2022 23:39:46] "POST /findtaxi HTTP/1.1" 200 -
+127.0.0.1 - - [29/May/2022 23:39:47] "POST /register HTTP/1.1" 200 -
+127.0.0.1 - - [29/May/2022 23:39:47] "POST /createride HTTP/1.1" 200 -
+127.0.0.1 - - [29/May/2022 23:39:48] "POST /findtaxi HTTP/1.1" 200 -
+127.0.0.1 - - [29/May/2022 23:39:50] "POST /register HTTP/1.1" 200 -
+127.0.0.1 - - [29/May/2022 23:39:51] "POST /createride HTTP/1.1" 200 -
+[mqtt-lambda] connecting to mqtt server
+[mqtt-lambda] publishing ephemeral message: topic=ani-gl/ride/e2871f44-7cfb-4267-a1d9-09bdccea0989 message={"type": "message", "msg": "found 1 nearby available taxi(s)"}
+[mqtt-lambda] publishing ephemeral message: topic=ani-gl/ride/e2871f44-7cfb-4267-a1d9-09bdccea0989 message={"type": "message", "msg": "sending a ride request to taxi taxi-0"}
+[mqtt-lambda] publishing ephemeral message: topic=ani-gl/taxi/059ca60f-dc23-440b-8e25-53ea1c70d078 message={"type": "ride_request", "ride_id": "6293b6effd16db466688bfe6"}
+[mqtt-lambda] publishing ephemeral message: topic=ani-gl/ride/e2871f44-7cfb-4267-a1d9-09bdccea0989 message={"type": "message", "msg": "waiting for first acceptance by taxi"}
+[mqtt-lambda] connecting to mqtt server
+[mqtt-lambda] publishing ephemeral message: topic=ani-gl/ride/e2871f44-7cfb-4267-a1d9-09bdccea0989 message={"type": "message", "msg": "taxi 6293b6dffd16db466688bfde rejected your request"}
+[mqtt-lambda] disconnecting from mqtt server
+127.0.0.1 - - [29/May/2022 23:39:53] "POST /accept HTTP/1.1" 200 -
+[mqtt-lambda] publishing ephemeral message: topic=ani-gl/ride/e2871f44-7cfb-4267-a1d9-09bdccea0989 message={"type": "message", "msg": "waiting for first acceptance by taxi: remaining_time=110"}
+[mqtt-lambda] publishing ephemeral message: topic=ani-gl/ride/e2871f44-7cfb-4267-a1d9-09bdccea0989 message={"type": "message", "msg": "waiting for first acceptance by taxi: remaining_time=100"}
+location update request from taxi 6293b6dffd16db466688bfde with location [77.5672848525251, 12.930818692064914]
+127.0.0.1 - - [29/May/2022 23:40:13] "POST /location HTTP/1.1" 200 -
+[mqtt-lambda] publishing ephemeral message: topic=ani-gl/ride/e2871f44-7cfb-4267-a1d9-09bdccea0989 message={"type": "message", "msg": "waiting for first acceptance by taxi: remaining_time=90"}
+[mqtt-lambda] publishing ephemeral message: topic=ani-gl/ride/e2871f44-7cfb-4267-a1d9-09bdccea0989 message={"type": "message", "msg": "waiting for first acceptance by taxi: remaining_time=79"}
+[mqtt-lambda] publishing ephemeral message: topic=ani-gl/ride/e2871f44-7cfb-4267-a1d9-09bdccea0989 message={"type": "message", "msg": "waiting for first acceptance by taxi: remaining_time=69"}
+[mqtt-lambda] publishing ephemeral message: topic=ani-gl/ride/e2871f44-7cfb-4267-a1d9-09bdccea0989 message={"type": "message", "msg": "waiting for first acceptance by taxi: remaining_time=59"}
+[mqtt-lambda] publishing ephemeral message: topic=ani-gl/ride/e2871f44-7cfb-4267-a1d9-09bdccea0989 message={"type": "message", "msg": "waiting for first acceptance by taxi: remaining_time=48"}
+[mqtt-lambda] publishing ephemeral message: topic=ani-gl/ride/e2871f44-7cfb-4267-a1d9-09bdccea0989 message={"type": "message", "msg": "waiting for first acceptance by taxi: remaining_time=38"}
+[mqtt-lambda] publishing ephemeral message: topic=ani-gl/ride/e2871f44-7cfb-4267-a1d9-09bdccea0989 message={"type": "message", "msg": "waiting for first acceptance by taxi: remaining_time=28"}
+[mqtt-lambda] publishing ephemeral message: topic=ani-gl/ride/e2871f44-7cfb-4267-a1d9-09bdccea0989 message={"type": "message", "msg": "waiting for first acceptance by taxi: remaining_time=18"}
+location update request from taxi 6293b6dffd16db466688bfde with location [77.56717368516802, 12.931261327178243]
+127.0.0.1 - - [29/May/2022 23:41:42] "POST /location HTTP/1.1" 200 -
+[mqtt-lambda] publishing ephemeral message: topic=ani-gl/ride/e2871f44-7cfb-4267-a1d9-09bdccea0989 message={"type": "message", "msg": "waiting for first acceptance by taxi: remaining_time=7"}
+[mqtt-lambda] publishing ephemeral message: topic=ani-gl/ride/e2871f44-7cfb-4267-a1d9-09bdccea0989 message={"type": "message", "msg": "waiting for first acceptance by taxi: remaining_time=-3"}
+[mqtt-lambda] publishing ephemeral message: topic=ani-gl/ride/e2871f44-7cfb-4267-a1d9-09bdccea0989 message={"type": "message", "msg": "changed status to failed state"}
+[mqtt-lambda] publishing ephemeral message: topic=ani-gl/ride/e2871f44-7cfb-4267-a1d9-09bdccea0989 message={"completed": true}
+[mqtt-lambda] disconnecting from mqtt server
+127.0.0.1 - - [29/May/2022 23:41:55] "POST /findtaxi HTTP/1.1" 200 -
+location update request from taxi 6293b6dffd16db466688bfde with location [77.56234761817174, 12.932355113935746]
+127.0.0.1 - - [30/May/2022 00:12:52] "POST /location HTTP/1.1" 200 -
+127.0.0.1 - - [30/May/2022 00:38:24] "POST /location HTTP/1.1" 401 -
+127.0.0.1 - - [30/May/2022 00:45:45] "POST /register HTTP/1.1" 200 -
+login request from taxi 6293c660fd16db466688bfe7 was set to uuid f645a3e6-5b30-4c31-924e-9fa39f10421e
+[mqtt-lambda] connecting to mqtt server
+[mqtt-lambda] publishing ephemeral message: topic=ani-gl/taxi/f645a3e6-5b30-4c31-924e-9fa39f10421e message={"msg": "welcome"}
+127.0.0.1 - - [30/May/2022 00:45:45] "POST /login HTTP/1.1" 200 -
+location update request from taxi 6293c660fd16db466688bfe7 with location [77.6907254016738, 13.087381516446582]
+127.0.0.1 - - [30/May/2022 00:45:46] "POST /location HTTP/1.1" 200 -
+127.0.0.1 - - [30/May/2022 00:45:57] "POST /register HTTP/1.1" 200 -
+127.0.0.1 - - [30/May/2022 00:45:58] "POST /createride HTTP/1.1" 200 -
+127.0.0.1 - - [30/May/2022 00:45:58] "POST /findtaxi HTTP/1.1" 200 -
+127.0.0.1 - - [30/May/2022 00:46:01] "POST /register HTTP/1.1" 200 -
+127.0.0.1 - - [30/May/2022 00:46:02] "POST /createride HTTP/1.1" 200 -
+[mqtt-lambda] connecting to mqtt server
+[mqtt-lambda] publishing ephemeral message: topic=ani-gl/ride/da91a5c4-e324-48b3-b7c2-bc3128cefd36 message={"type": "message", "msg": "found 1 nearby available taxi(s)"}
+[mqtt-lambda] publishing ephemeral message: topic=ani-gl/ride/da91a5c4-e324-48b3-b7c2-bc3128cefd36 message={"type": "message", "msg": "sending a ride request to taxi taxi-0"}
+[mqtt-lambda] publishing ephemeral message: topic=ani-gl/taxi/f645a3e6-5b30-4c31-924e-9fa39f10421e message={"type": "ride_request", "ride_id": "6293c672fd16db466688bfeb"}
+[mqtt-lambda] publishing ephemeral message: topic=ani-gl/ride/da91a5c4-e324-48b3-b7c2-bc3128cefd36 message={"type": "message", "msg": "waiting for first acceptance by taxi"}
+[mqtt-lambda] connecting to mqtt server
+[mqtt-lambda] publishing ephemeral message: topic=ani-gl/ride/da91a5c4-e324-48b3-b7c2-bc3128cefd36 message={"type": "message", "msg": "taxi 6293c660fd16db466688bfe7 accepted your request"}
+[mqtt-lambda] publishing ephemeral message: topic=ani-gl/ride/da91a5c4-e324-48b3-b7c2-bc3128cefd36 message={"type": "message", "msg": "taxi 6293c660fd16db466688bfe7 assigned to your request"}
+[mqtt-lambda] disconnecting from mqtt server
+127.0.0.1 - - [30/May/2022 00:46:05] "POST /accept HTTP/1.1" 200 -
+[mqtt-lambda] connecting to mqtt server
+[mqtt-lambda] publishing ephemeral message: topic=ani-gl/ride/da91a5c4-e324-48b3-b7c2-bc3128cefd36 message={"type": "message", "msg": "your ride has started"}
+[mqtt-lambda] disconnecting from mqtt server
+127.0.0.1 - - [30/May/2022 00:46:10] "POST /ride HTTP/1.1" 200 -
+[mqtt-lambda] publishing ephemeral message: topic=ani-gl/ride/da91a5c4-e324-48b3-b7c2-bc3128cefd36 message={"type": "message", "msg": "waiting for first acceptance by taxi: remaining_time=110"}
+[mqtt-lambda] disconnecting from mqtt server
+127.0.0.1 - - [30/May/2022 00:46:13] "POST /findtaxi HTTP/1.1" 200 -
+[mqtt-lambda] connecting to mqtt server
+[mqtt-lambda] publishing ephemeral message: topic=ani-gl/ride/da91a5c4-e324-48b3-b7c2-bc3128cefd36 message={"type": "message", "msg": "your ride has ended"}
+[mqtt-lambda] publishing ephemeral message: topic=ani-gl/ride/da91a5c4-e324-48b3-b7c2-bc3128cefd36 message={"completed": true, "ride_id": "6293c672fd16db466688bfeb"}
+[mqtt-lambda] disconnecting from mqtt server
+127.0.0.1 - - [30/May/2022 00:46:38] "POST /ride HTTP/1.1" 200 -
+location update request from taxi 6293c660fd16db466688bfe7 with location [77.68672089557461, 13.084205812906298]
+127.0.0.1 - - [30/May/2022 00:46:52] "POST /location HTTP/1.1" 200 -
+
+----

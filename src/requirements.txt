@@ -4,3 +4,4 @@ paho-mqtt
 pyjwt
 pymongo-inmemory
 joblib
+dnspython

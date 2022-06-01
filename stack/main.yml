@@ -66,10 +66,6 @@ Resources:
         CleanupLambdaArn: !GetAtt LambdaStack.Outputs.CleanupLambdaArn
         ApiGatewayStageName: 'v1'
 
-  SnsStack:
-    Type: "AWS::CloudFormation::Stack"
-    Properties:
-      TemplateURL: !Sub 'https://${Bucket}.s3.amazonaws.com/build/${Namespace}/${BuildStamp}/stack/sns.yml'
-      Parameters:
-        Namespace: !Ref Namespace
-        LocationLambdaArn: !GetAtt LambdaStack.Outputs.LocationLambdaArn
+Outputs:
+  ApiGatewayEndpoint:
+    Value: !GetAtt ApiStack.Outputs.ApiGatewayEndpoint

@@ -8,7 +8,7 @@ init: check-env prepare-build
 	@echo "initializing workspace"
 	aws s3api create-bucket --bucket $(BUCKET) --region us-east-1 --acl public-read --object-ownership BucketOwnerPreferred
 
-	aws cloudformation deploy --template-file src/stack/base.yml --stack-name base-stack \
+	aws cloudformation deploy --template-file stack/base.yml --stack-name base-stack \
 		--parameter-overrides SubnetId=$(SUBNET_ID) SecurityGroup=$(SECURITY_GROUP) VpcId=$(VPC_ID) \
 		--capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM
 
@@ -22,15 +22,16 @@ build: check-env prepare-build
 	cd /tmp/gl-build/$(BUILD_STAMP)/; zip -r /tmp/gl-build/layer.zip python;
 	aws s3 cp /tmp/gl-build/layer.zip s3://$(BUCKET)/build/$(GLNAME)-$(BUILD_STAMP)-layer.zip
 	# upload lambda zip
-	rm -rf /tmp/gl-build/$(BUILD_STAMP)/*; cp src/* /tmp/gl-build/$(BUILD_STAMP)/
+	rm -rf /tmp/gl-build/$(BUILD_STAMP)/*; cp -r src/* /tmp/gl-build/$(BUILD_STAMP)/
 	cd /tmp/gl-build/$(BUILD_STAMP)/; zip -r /tmp/gl-build/lambda.zip *; rm -rf /tmp/gl-build/$(BUILD_STAMP);
 	aws s3 sync src/ s3://$(BUCKET)/build/$(GLNAME)/$(BUILD_STAMP)/ --acl public-read
+	aws s3 sync stack/ s3://$(BUCKET)/build/$(GLNAME)/$(BUILD_STAMP)/stack/ --acl public-read
 	aws s3 cp /tmp/gl-build/lambda.zip s3://$(BUCKET)/build/$(GLNAME)/$(BUILD_STAMP)/
 
 deploy: build
 	@echo "deploying application"
 	aws cloudformation validate-template --template-url https://$(BUCKET).s3.amazonaws.com/build/$(GLNAME)/$(BUILD_STAMP)/stack/main.yml > /dev/null
-	aws cloudformation deploy --template-file src/stack/main.yml --stack-name $(GLNAME)-taxi-service \
+	aws cloudformation deploy --template-file stack/main.yml --stack-name $(GLNAME)-taxi-service \
 		--parameter-overrides Bucket=$(BUCKET) Namespace=$(GLNAME) BuildStamp=$(BUILD_STAMP)\
 		SubnetId=$(SUBNET_ID) SecurityGroup=$(SECURITY_GROUP) \
 		--capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM
@@ -39,6 +40,12 @@ deploy: build
 undeploy: check-env
 	@echo "running undeploy"
 	aws cloudformation delete-stack --stack-name $(GLNAME)-taxi-service
+
+client: check-env
+	@echo "running clients"
+	API=$(shell aws cloudformation describe-stacks --stack-name $(GLNAME)-taxi-service --query 'Stacks[0].Outputs[0].OutputValue'); \
+	python3 ./src/taxi_app.py --uri $$API --count $(COUNT) --latitude-min 12.87 --latitude-max 13.21 --longitude-min 77.34 \
+	  --longitude-max 77.87
 
 cleanup: check-env
 	@echo "running cleanup"

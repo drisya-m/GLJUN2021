@@ -35,7 +35,7 @@ class DatabaseDriver:
 
     def __init__(self, database_name: str, mongo_uri: str):
         if os.environ.get('mode') == 'LOCAL':
-            self.client = pymongo.MongoClient("mongodb://127.0.0.1", 27017)
+            self.client = pymongo.MongoClient(mongo_uri)
         elif os.environ.get('mode') == 'IN_MEMORY':
             self.client = pymongo_inmemory.MongoClient("mongodb://127.0.0.1", 27017)
         else:

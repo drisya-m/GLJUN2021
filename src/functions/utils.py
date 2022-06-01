@@ -80,7 +80,7 @@ def get_mqtt_public_host() -> str:
 
 def get_mongo_uri() -> str:
     if os.environ.get('mode') == 'LOCAL':
-        return ''
+        return os.environ['MONGO_URI']
     if os.environ.get('mode') == 'IN_MEMORY':
         return ''
     ssm = boto3.client('ssm')
@@ -129,7 +129,7 @@ def unauthorized() -> dict:
 
 
 def bad_request() -> dict:
-    return respond(401, {"msg": "bad request"}, {})
+    return respond(400, {"msg": "bad request"}, {})
 
 
 def ok_request() -> dict:
