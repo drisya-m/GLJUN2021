@@ -8,9 +8,13 @@
 # @author Drisya Mathilakath
 # @since 2022.05
 #
-
+import json
+import paho.mqtt.client
+from core import *
 import requests
 from jwthelper import JwtHelper
+import random
+from threading import Thread
 
 class ApiClient:
     #URI for server
@@ -19,6 +23,9 @@ class ApiClient:
     secret: str
     #taxi number
     taxi_id: str
+    #ride id
+    ride_id: str
+
 
 
     def __init__(self, uri: str, license: str, name: str, category: str):
@@ -44,17 +51,46 @@ class ApiClient:
     def taxi_types(cls):
         return ['MINI', 'ECONOMY', 'SEDAN', 'LUXURY', 'ROYAL']
 
+    def accept(self, ride_id):
+        request_url = f'{self.uri}/accept'
+        helper = JwtHelper(secret=self.secret)
+        token = helper.create_jwt(identity=self.taxi_id, minutes=2)
+        payload = {'taxi_id': self.taxi_id, 'ride_id': ride_id, 'accepted': random.choice(['YES', 'NO'])}
+        requests.request(method="POST", url=request_url, json=payload,
+                                    headers={'Content-Type': 'application/json',
+                                             'X-Taxi-Id': self.taxi_id,
+                                             'X-Token': token})
+        print(f'Taxi accepted the ride request')
 
-    def taxi_login(self, license):
-        print(f'{license} is logging in')
+
+
+
+    def on_message(self, client, userdata, msg):
+        print(msg.topic + " " + str(msg.qos) + " " + str(msg.payload))
+        payload = json.loads(msg.payload)
+        if payload['type'] == 'ride_request':
+            ride_id = payload['ride_id']
+            self.accept(ride_id)
+
+    def login(self):
         request_url = f'{self.uri}/login'
         helper = JwtHelper(secret=self.secret)
-        token = helper.create_jwt(identity=license, minutes=2)
+        token = helper.create_jwt(identity=self.taxi_id, minutes=2)
         payload = {'taxi_id': self.taxi_id}
         response = requests.request(method="POST", url=request_url, json=payload,
                                     headers={'Content-Type': 'application/json',
-                                             'X-Taxi-Id': license,
+                                             'X-Taxi-Id': self.taxi_id,
                                              'X-Token': token})
-        print(response.text)
-        data = response.json()
+        data: dict = response.json()
         print(f'Server responded with {data}')
+        #return data
+        def mqtt_listener(cl, ud, msg: paho.mqtt.client.MQTTMessage):
+            print(msg.payload)
+            print(self)
+
+        # Listen for taxi request from user
+        mqtt_client = MqttClient(name=self.name, host=data['host'])
+        mqtt_client.connect()
+        mqtt_client.subscribe(topic=data['topic'], fn=mqtt_listener)
+        mqtt_client.block()
+
