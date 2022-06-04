@@ -11,6 +11,7 @@
 from random import uniform
 import argparse
 from src.clients.user.apiclient import ApiClient
+from threading import Thread
 
 
 # Initializing Parser
@@ -37,9 +38,12 @@ for index in range(0, user_count):
     name = f'taxi user {index}'
     client = ApiClient(uri=server_uri, name=name)
     client.register()
-    #latitude, longitude = uniform(-180, 180), uniform(-90, 90)
-    latitude, longitude = uniform(min_latitude, max_latitude), uniform(min_longitude, max_longitude)
-    client.createride(longitude, latitude)
-    client.find_taxi()
     user_list.append(client)
+
+for user in user_list:
+    print(user)
+    latitude, longitude = uniform(min_latitude, max_latitude), uniform(min_longitude, max_longitude)
+    t = Thread(target=client.createride, kwargs={'user_id': user, 'longitude': longitude, 'latitude': latitude})
+    t.start()
+
 
