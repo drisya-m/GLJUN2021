@@ -15,7 +15,7 @@ Parameters:
     Type: String
   SecurityGroup:
     Type: String
-  MongoUriSsmParameterName:
+  MongoUri:
     Type: String
     Default: "/mongo-uri"
   MqttSsmPublicIp:
@@ -44,7 +44,7 @@ Resources:
         BuildStamp: !Ref BuildStamp
         SubnetId: !Ref SubnetId
         SecurityGroup: !Ref SecurityGroup
-        MongoUriSsmParameterName: !Ref MongoUriSsmParameterName
+        MongoUri: !Ref MongoUri
         MqttPublicIp: !Ref MqttSsmPublicIp
         MqttPrivateIp: !Ref MqttSsmPrivateIp
         CommonLambdaRoleArn: !GetAtt SecurityStack.Outputs.CommonLambdaRoleArn

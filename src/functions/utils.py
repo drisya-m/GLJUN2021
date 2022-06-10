@@ -83,10 +83,7 @@ def get_mongo_uri() -> str:
         return os.environ['MONGO_URI']
     if os.environ.get('mode') == 'IN_MEMORY':
         return ''
-    ssm = boto3.client('ssm')
-    parameter = ssm.get_parameter(Name=os.environ['SSM_MONGO_URI'], WithDecryption=False)
-    return parameter['Parameter']['Value']
-
+    return os.environ.get("MONGO_URI")
 
 def get_database_name() -> str:
     return '{}-taxi_service'.format(get_namespace()).lower()
@@ -109,6 +106,7 @@ def get_db_driver() -> DatabaseDriver:
     if _db_driver is None:
         # get mongo uri
         mongo_uri = get_mongo_uri()
+        print(f"Mongo uri : {mongo_uri}")
         # create database helper
         _db_driver = DatabaseDriver(mongo_uri=mongo_uri, database_name=get_database_name())
     return _db_driver

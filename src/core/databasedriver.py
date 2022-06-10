@@ -7,8 +7,8 @@
 #
 # @author Shanger Sivaramachandran
 # @since 2022.05
-
-import mongodbconnection
+from bson import ObjectId
+from core.mongodbconnection import MongoDBConnection
 
 COL_TAXI = 'taxi_profile'
 COL_USER = 'user_profile'
@@ -19,7 +19,7 @@ COL_LOC_HIST = 'taxi_location_history'
 class DatabaseDriver:
     def __init__(self, mongo_uri: str, database_name: str):
         self.database_name = database_name
-        self.cli = mongodbconnection.MongoDBConnection(mongo_uri, database_name)
+        self.cli = MongoDBConnection(mongo_uri, database_name)
         self.create_database_with_collections()
 
     # Create database if doesn't exist.
@@ -35,25 +35,24 @@ class DatabaseDriver:
     def get_taxi(self, taxi_id: str) -> dict:
         with self.cli:
             db = self.cli.connection[self.database_name]
-            return dict(db['taxi_profile'].find({taxi_id: taxi_id}))
+            return dict(db['taxi_profile'].find_one({'_id': ObjectId(taxi_id)}))
 
     # insert new taxi record here, return Id
     def create_taxi_record(self, taxi: dict) -> str:
         with self.cli:
             db = self.cli.connection[self.database_name]
-            taxi_location_col = COL_LOC_HIST + '_' + taxi['taxi_id']
-            db[taxi_location_col]
-            db[taxi_location_col].create_index([('location', '2dsphere')])
-            historic_location = self.Update_location_history(taxi['active_taxi'], taxi['location'],
-                                                             taxi['taxi_on_duty'], taxi['last_update'])
-            db[taxi_location_col].insert_one(historic_location)
-            return db[COL_TAXI].insert_one(taxi)
+            #taxi_location_col = COL_LOC_HIST + '_' + taxi['taxi_id']
+            #db[taxi_location_col]
+            '''historic_location = self.Update_location_history(taxi['active_taxi'], taxi['location'],
+                                                             taxi['taxi_on_duty'], taxi['updated_timestamp'])
+            db[taxi_location_col].insert_one(historic_location)'''
+            return db[COL_TAXI].insert_one(taxi).inserted_id
 
     # update taxi record
     def update_taxi_record(self, taxi_id: str, patch: dict):
         with self.cli:
             db = self.cli.connection[self.database_name]
-            return db[COL_TAXI].update({"taxi_id": taxi_id}, {"$set": patch})
+            return db[COL_TAXI].update_one({"_id": ObjectId(taxi_id)}, {"$set": patch})
 
     def find_nearby_taxi(self, location: dict, taxi_type: str, radius: float, limit: int) -> list:
         metersPerKiloMeter = 1000
@@ -124,7 +123,8 @@ class DatabaseDriver:
         historic_location = {}
         historic_location['location'] = {}
         historic_location['location']['type'] = 'Point'
-        historic_location['location']['coordinates'] = location['coordinates']
+        historic_location['location']['coordinates'] = []
+        historic_location['location']['coordinates'] = location
         historic_location['location']['time_stamp'] = updated_timestamp
         historic_location['location']['taxi_on_duty'] = taxi_on_duty
         historic_location['location']['active_taxi'] = active_taxi
@@ -135,10 +135,8 @@ class DatabaseDriver:
         with self.cli:
             db = self.cli.connection[self.database_name]
             collection_list = db.list_collection_names()
-            print(collection_list)
             for collection in collection_list:
-                print(collection)
-                db[collection].drop()
+                collection.drop()
 
     def create_index(self):
         with self.cli:

@@ -11,6 +11,8 @@
 import time
 import uuid
 
+from bson import ObjectId
+
 from .utils import *
 from core import DatabaseDriver, MqttClient
 
@@ -31,7 +33,7 @@ def handler(event, context):
     taxi_uuid = str(uuid.uuid4())
     topic = f'{get_namespace()}/taxi/{taxi_uuid}'
     # patch
-    if not db_driver.patch_taxi(taxi_id=taxi_id, patch={
+    if not db_driver.update_taxi_record(taxi_id=taxi_id, patch={
         "topic": topic,
         "login_time": int(time.time()),
         "status": "ONLINE"

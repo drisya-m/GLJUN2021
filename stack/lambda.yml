@@ -15,7 +15,7 @@ Parameters:
     Type: String
   SecurityGroup:
     Type: String
-  MongoUriSsmParameterName:
+  MongoUri:
     Type: String
   MqttPrivateIp:
     Type: String
@@ -62,7 +62,7 @@ Resources:
         Environment:
           Variables:
             NAMESPACE: !Ref Namespace
-            SSM_MONGO_URI: !Ref MongoUriSsmParameterName
+            MONGO_URI: !Ref MongoUri
             MQTT_PUBLIC_IP: !Ref MqttPublicIp
             MQTT_PRIVATE_IP: !Ref MqttPrivateIp
 
@@ -88,7 +88,7 @@ Resources:
       Environment:
         Variables:
           NAMESPACE: !Ref Namespace
-          SSM_MONGO_URI: !Ref MongoUriSsmParameterName
+          MONGO_URI: !Ref MongoUri
           MQTT_PUBLIC_IP: !Ref MqttPublicIp
           MQTT_PRIVATE_IP: !Ref MqttPrivateIp
 
@@ -114,7 +114,7 @@ Resources:
       Environment:
         Variables:
           NAMESPACE: !Ref Namespace
-          SSM_MONGO_URI: !Ref MongoUriSsmParameterName
+          MONGO_URI: !Ref MongoUri
           MQTT_PUBLIC_IP: !Ref MqttPublicIp
           MQTT_PRIVATE_IP: !Ref MqttPrivateIp
 
@@ -133,7 +133,7 @@ Resources:
       Environment:
         Variables:
           NAMESPACE: !Ref Namespace
-          SSM_MONGO_URI: !Ref MongoUriSsmParameterName
+          MONGO_URI: !Ref MongoUri
           MQTT_PUBLIC_IP: !Ref MqttPublicIp
           MQTT_PRIVATE_IP: !Ref MqttPrivateIp
 
@@ -152,7 +152,7 @@ Resources:
       Environment:
         Variables:
           NAMESPACE: !Ref Namespace
-          SSM_MONGO_URI: !Ref MongoUriSsmParameterName
+          MONGO_URI: !Ref MongoUri
           MQTT_PUBLIC_IP: !Ref MqttPublicIp
           MQTT_PRIVATE_IP: !Ref MqttPrivateIp
 
@@ -178,7 +178,7 @@ Resources:
       Environment:
         Variables:
           NAMESPACE: !Ref Namespace
-          SSM_MONGO_URI: !Ref MongoUriSsmParameterName
+          MONGO_URI: !Ref MongoUri
           MQTT_PUBLIC_IP: !Ref MqttPublicIp
           MQTT_PRIVATE_IP: !Ref MqttPrivateIp
 
@@ -204,7 +204,7 @@ Resources:
       Environment:
         Variables:
           NAMESPACE: !Ref Namespace
-          SSM_MONGO_URI: !Ref MongoUriSsmParameterName
+          MONGO_URI: !Ref MongoUri
           MQTT_PUBLIC_IP: !Ref MqttPublicIp
           MQTT_PRIVATE_IP: !Ref MqttPrivateIp
 
@@ -223,7 +223,7 @@ Resources:
       Environment:
         Variables:
           NAMESPACE: !Ref Namespace
-          SSM_MONGO_URI: !Ref MongoUriSsmParameterName
+          MONGO_URI: !Ref MongoUri
           MQTT_PUBLIC_IP: !Ref MqttPublicIp
           MQTT_PRIVATE_IP: !Ref MqttPrivateIp
 
@@ -249,7 +249,7 @@ Resources:
       Environment:
         Variables:
           NAMESPACE: !Ref Namespace
-          SSM_MONGO_URI: !Ref MongoUriSsmParameterName
+          MONGO_URI: !Ref MongoUri
           MQTT_PUBLIC_IP: !Ref MqttPublicIp
           MQTT_PRIVATE_IP: !Ref MqttPrivateIp
 
