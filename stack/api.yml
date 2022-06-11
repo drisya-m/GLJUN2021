@@ -210,6 +210,14 @@ Resources:
     Type: AWS::ApiGateway::Deployment
     DependsOn:
       - ApiGatewayRegisterMethod
+      - ApiGatewayAcceptRideMethod
+      - ApiGatewayCleanupMethod
+      - ApiGatewayCreateRideMethod
+      - ApiGatewayFindTaxiMethod
+      - ApiGatewayLocationMethod
+      - ApiGatewayLoginMethod
+      - ApiGatewayLogoffMethod
+      - ApiGatewayRideUpdateMethod
     Properties:
       RestApiId: !Ref RestApiGateway
       StageName: !Ref ApiGatewayStageName

@@ -21,7 +21,7 @@ class HttpClient:
         self.uri = uri
 
     def send_taxi_request(self, path: str, identity: str, secret: str, body: Optional[dict]):
-        request_url = f'{self.uri}/{path}'
+        request_url = f'{self.uri}{path}'
         helper = JwtHelper(secret=secret)
         token = helper.create_jwt(identity=identity, minutes=2)
         print(f"identity : {identity}")

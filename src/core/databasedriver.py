@@ -41,11 +41,11 @@ class DatabaseDriver:
     def create_taxi_record(self, taxi: dict) -> str:
         with self.cli:
             db = self.cli.connection[self.database_name]
-            #taxi_location_col = COL_LOC_HIST + '_' + taxi['taxi_id']
-            #db[taxi_location_col]
-            '''historic_location = self.Update_location_history(taxi['active_taxi'], taxi['location'],
+            taxi_location_col = COL_LOC_HIST + '_' + taxi['taxi_id']
+            db[taxi_location_col]
+            historic_location = self.Update_location_history(taxi['active_taxi'], taxi['location'],
                                                              taxi['taxi_on_duty'], taxi['updated_timestamp'])
-            db[taxi_location_col].insert_one(historic_location)'''
+            db[taxi_location_col].insert_one(historic_location)
             return db[COL_TAXI].insert_one(taxi).inserted_id
 
     # update taxi record

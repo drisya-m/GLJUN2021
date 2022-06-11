@@ -3,7 +3,9 @@ Description: Stack to create Api gateway
 Parameters:
   VpcId:
     Type: String
-  SubnetId:
+  SubnetIdPrivate:
+    Type: String
+  SubnetIdPublic:
     Type: String
   SecurityGroup:
     Type: String
@@ -39,14 +41,17 @@ Resources:
     Properties:
       ImageId: 'ami-0b0ea68c435eb488d'
       InstanceType: t2.micro
-      SecurityGroupIds:
-        - !Ref MqttEc2SecurityGroup
       UserData:
         'Fn::Base64': |
           #!/bin/bash -x
           sudo apt-get update
           sudo apt-get -y install mosquitto mosquitto-clients
-      SubnetId: !Ref SubnetId
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          SubnetId: !Ref SubnetIdPublic
+          GroupSet:
+            - !Ref MqttEc2SecurityGroup
       Tags:
         - Key: Name
           Value: "mqtt-server"
