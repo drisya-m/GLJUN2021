@@ -41,18 +41,19 @@ class DatabaseDriver:
     def create_taxi_record(self, taxi: dict) -> str:
         with self.cli:
             db = self.cli.connection[self.database_name]
-            taxi_location_col = COL_LOC_HIST + '_' + taxi['taxi_id']
+            uuid = db[COL_TAXI].insert_one(taxi).inserted_id
+            taxi_location_col = COL_LOC_HIST + '_' + str(uuid)
             db[taxi_location_col]
             historic_location = self.Update_location_history(taxi['active_taxi'], taxi['location'],
                                                              taxi['taxi_on_duty'], taxi['updated_timestamp'])
             db[taxi_location_col].insert_one(historic_location)
-            return db[COL_TAXI].insert_one(taxi).inserted_id
+            return uuid
 
     # update taxi record
-    def update_taxi_record(self, taxi_id: str, patch: dict):
+    def update_taxi_record(self, uuid: str, patch: dict):
         with self.cli:
             db = self.cli.connection[self.database_name]
-            return db[COL_TAXI].update_one({"_id": ObjectId(taxi_id)}, {"$set": patch})
+            return db[COL_TAXI].update_one({"_id": ObjectId(uuid)}, {"$set": patch})
 
     def find_nearby_taxi(self, location: dict, taxi_type: str, radius: float, limit: int) -> list:
         metersPerKiloMeter = 1000
@@ -73,7 +74,7 @@ class DatabaseDriver:
             nearByTaxiList = []
             for taxi in range(limit - 1):
                 for taxi in taxi_list:
-                    nearByTaxiList.append(taxi['taxi_id'])
+                    nearByTaxiList.append(str(taxi['_id']))
             return nearByTaxiList
 
     # return list of all taxi records
@@ -108,15 +109,15 @@ class DatabaseDriver:
                                                                         "completion_time": ride_completion_time}})
 
     # update the latest location of the taxi.
-    def update_latest_taxi_location(self, taxi_id, updated_timestamp, location, taxi_on_duty, active_taxi):
+    def update_latest_taxi_location(self, uuid, updated_timestamp, location, taxi_on_duty, active_taxi):
         with self.cli:
             db = self.cli.connection[self.database_name]
-            db[COL_TAXI].update_one({"taxi_id": taxi_id}, {"$set": {str(updated_timestamp): updated_timestamp,
+            db[COL_TAXI].update_one({"_id": uuid}, {"$set": {str(updated_timestamp): updated_timestamp,
                                                                     "location": location,
                                                                     "taxi_on_duty": taxi_on_duty,
                                                                     "active_taxi": active_taxi}})
             historic_location = self.Update_location_history(active_taxi, location, taxi_on_duty, updated_timestamp)
-            return db[COL_LOC_HIST + '_' + taxi_id].insert_one(historic_location)
+            return db[COL_LOC_HIST + '_' + uuid].insert_one(historic_location)
 
     # to construct dictionary for location_history.
     def Update_location_history(self, active_taxi, location, taxi_on_duty, updated_timestamp):
