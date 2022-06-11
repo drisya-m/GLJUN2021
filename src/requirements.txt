@@ -1,7 +1,9 @@
-pymongo
+pymongo[srv]
 boto3
 paho-mqtt
 pyjwt
 pymongo-inmemory
 joblib
 dnspython
+requests
+flask

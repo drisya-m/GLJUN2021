@@ -5,7 +5,6 @@
 # Copyright (c) 2022 My Great Learning.
 # All Rights Reserved.
 #
-# @author Nilotpal Sarkar
 # @since 2022.05
 #
 import argparse
@@ -40,6 +39,12 @@ def get_license() -> str:
     return f"KA/{var1}/{var2}"
 
 
+def name_generator():
+    first_name = ["manjunath", "Dinesh", "Harish", "Divakar", "Alex", "Forex"]
+    second_name = ["Godda", "Thiruappa", "Sinha", "Sharma", "Mazumder", "Mukherjee"]
+    return f'{random.choice(first_name)} {random.choice(second_name)}'
+
+
 # create bound
 bound = LocationBound()
 bound.min_latitude = float(args.latitude_min)
@@ -50,7 +55,8 @@ bound.max_longitude = float(args.longitude_max)
 taxi_clients = list()
 for index in range(0, args.count):
     name = f'taxi-{index}'
-    client = TaxiApiClient(uri=args.uri, name=name, license=get_license(), taxi_type=get_taxi_type(), bound=bound)
+    client = TaxiApiClient(uri=args.uri, name=name, license=get_license(), taxi_type=get_taxi_type(), bound=bound,
+                           driver_name=name_generator())
     client.register()
     taxi_clients.append(client)
 Parallel(n_jobs=args.count, backend='threading')(delayed(client.start)() for client in taxi_clients)

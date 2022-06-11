@@ -11,6 +11,7 @@
 import uuid
 
 from .utils import *
+from core import DatabaseDriver
 
 
 def handler(event, context):
@@ -20,14 +21,17 @@ def handler(event, context):
     registration_type: str = body.get('type')
     # different validation for taxi and user
     if registration_type == 'taxi':
+        print(f"Taxi registration : {body}")
         return handle_taxi_registration(data=body)
     elif registration_type == 'user':
+        print(f"User registration : {body}")
         return handle_user_registration(data=body)
     else:
         return bad_request()
 
 
 def handle_taxi_registration(data: dict):
+    print(get_mongo_uri())
     db_driver: DatabaseDriver = get_db_driver()
     taxi: dict = dict()
 
@@ -55,11 +59,14 @@ def handle_taxi_registration(data: dict):
     random_secret = str(uuid.uuid4())
     taxi['secret'] = random_secret
 
+    print(f"Registering Taxi : {taxi}")
     # Save
+
     taxi_id: str = db_driver.create_taxi_record(taxi=taxi)
     return respond(200, {
-        "taxi_id": taxi_id, "secret": random_secret
+        "taxi_id": str(taxi_id), "secret": random_secret
     }, {})
+
 
 
 def handle_user_registration(data: dict):

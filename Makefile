@@ -1,15 +1,17 @@
-BUCKET := taxi-service-gljun2021-04
+BUCKET := taxi-service-gljun2021-04-1
 BUILD_STAMP := $(shell date +%s )
-SECURITY_GROUP := sg-02b5c584492efd383
-SUBNET_ID := subnet-02286615e3f602c96
-VPC_ID := vpc-0983a0152b48345b5
+SECURITY_GROUP := sg-08b055a5ae2d14602 #sg-0c75e8c54d14a7923 #
+SUBNET_ID_PRIVATE := subnet-05576b7ac00da1a6a #subnet-057d907ff8e06168e #
+SUBNET_ID_PUBLIC := subnet-0f425683492182c0b
+VPC_ID := vpc-097d844410c7d0517 #vpc-0f92c984154228ba8 #
+MongoURL := mongodb+srv://root:root@capstone.ctccm.mongodb.net/?retryWrites=true&w=majority
 
 init: check-env prepare-build
 	@echo "initializing workspace"
-	aws s3api create-bucket --bucket $(BUCKET) --region us-east-1 --acl public-read --object-ownership BucketOwnerPreferred
+	aws s3api create-bucket --bucket $(BUCKET) --region us-east-1 --acl public-read
 
 	aws cloudformation deploy --template-file stack/base.yml --stack-name base-stack \
-		--parameter-overrides SubnetId=$(SUBNET_ID) SecurityGroup=$(SECURITY_GROUP) VpcId=$(VPC_ID) \
+		--parameter-overrides SubnetIdPrivate=$(SUBNET_ID_PRIVATE) SubnetIdPublic=$(SUBNET_ID_PUBLIC) SecurityGroup=$(SECURITY_GROUP) VpcId=$(VPC_ID) \
 		--capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM
 
 build: check-env prepare-build
@@ -32,9 +34,9 @@ deploy: build
 	@echo "deploying application"
 	aws cloudformation validate-template --template-url https://$(BUCKET).s3.amazonaws.com/build/$(GLNAME)/$(BUILD_STAMP)/stack/main.yml > /dev/null
 	aws cloudformation deploy --template-file stack/main.yml --stack-name $(GLNAME)-taxi-service \
-		--parameter-overrides Bucket=$(BUCKET) Namespace=$(GLNAME) BuildStamp=$(BUILD_STAMP)\
-		SubnetId=$(SUBNET_ID) SecurityGroup=$(SECURITY_GROUP) \
-		--capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM
+		--capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM --parameter-overrides Bucket=$(BUCKET) Namespace=$(GLNAME) BuildStamp=$(BUILD_STAMP)\
+		SubnetId=$(SUBNET_ID_PRIVATE) SecurityGroup=$(SECURITY_GROUP) MongoUri=$(MongoURL)\
+
 
 
 undeploy: check-env

@@ -3,7 +3,9 @@ Description: Stack to create Api gateway
 Parameters:
   VpcId:
     Type: String
-  SubnetId:
+  SubnetIdPrivate:
+    Type: String
+  SubnetIdPublic:
     Type: String
   SecurityGroup:
     Type: String
@@ -29,6 +31,7 @@ Resources:
         FromPort: 1883
         ToPort: 1884
         CidrIp: 0.0.0.0/0
+      VpcId: !Ref VpcId
       Tags:
         - Key: Name
           Value: "mqtt-server"
@@ -38,16 +41,21 @@ Resources:
     Properties:
       ImageId: 'ami-0b0ea68c435eb488d'
       InstanceType: t2.micro
-      SecurityGroupIds:
-        - !Ref MqttEc2SecurityGroup
       UserData:
         'Fn::Base64': |
           #!/bin/bash -x
           sudo apt-get update
           sudo apt-get -y install mosquitto mosquitto-clients
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          SubnetId: !Ref SubnetIdPublic
+          GroupSet:
+            - !Ref MqttEc2SecurityGroup
       Tags:
         - Key: Name
           Value: "mqtt-server"
+
   MqttPublicIpParameter:
     Type: AWS::SSM::Parameter
     Properties:
@@ -63,17 +71,18 @@ Resources:
       Value: !GetAtt MqttEc2Instance.PrivateIp
 
   # Expose SSM Service in the subnet
-  ServiceEndpointsInVpc:
-    Type: AWS::EC2::VPCEndpoint
-    Properties:
-      PrivateDnsEnabled: true
-      SecurityGroupIds:
-        - !Ref SecurityGroup
-      ServiceName: !Sub "com.amazonaws.${AWS::Region}.ssm"
-      SubnetIds:
-        - !Ref SubnetId
-      VpcEndpointType: Interface
-      VpcId: !Ref VpcId
+
+#  ServiceEndpointsInVpc:
+#    Type: AWS::EC2::VPCEndpoint
+#    Properties:
+#      PrivateDnsEnabled: true
+#      SecurityGroupIds:
+#        - !Ref SecurityGroup
+#      ServiceName: !Sub "com.amazonaws.${AWS::Region}.ssm"
+#      SubnetIds:
+#        - !Ref SubnetId
+#      VpcEndpointType: Interface
+#      VpcId: !Ref VpcId
 
 Outputs:
   DriverPublicIp:

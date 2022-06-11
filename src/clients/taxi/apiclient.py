@@ -5,7 +5,7 @@
 # Copyright (c) 2022 My Great Learning.
 # All Rights Reserved.
 #
-# @author Nilotpal Sarkar
+# @author
 # @since 2022.05
 #
 import json
@@ -45,8 +45,10 @@ class TaxiApiClient:
     ride_in_progress: bool
     # ride count
     ride_remaining: int
+    # Driver name
+    driver_name: str
 
-    def __init__(self, uri: str, name: str, license: str, taxi_type: str, bound: LocationBound):
+    def __init__(self, uri: str, name: str, license: str, taxi_type: str, bound: LocationBound, driver_name: str):
         self.server_client = HttpClient(uri=uri)
         self.name = name
         self.license = license
@@ -55,6 +57,14 @@ class TaxiApiClient:
         self.ride_in_progress = False
         self.ride_remaining = 5
         self.log = Log(name=name)
+        self.driver_name = driver_name
+
+    '''
+    def __init__(self, uri: str, taxi_id: str, secret: str):
+        self.taxi_id = taxi_id
+        self.server_client = HttpClient(uri=uri)
+        self.secret = secret
+    '''
 
     def send_authenticated(self, path: str, body):
         return self.server_client.send_taxi_request(path, self.taxi_id, self.secret, body)
@@ -65,7 +75,8 @@ class TaxiApiClient:
             "type": "taxi",
             "name": self.name,
             "taxi_type": self.taxi_type,
-            "license": self.license
+            "license": self.license,
+            "driver_name": self.driver_name
         }
         data: dict = self.server_client.send_anonymous('register', payload)
         self.taxi_id = data['taxi_id']

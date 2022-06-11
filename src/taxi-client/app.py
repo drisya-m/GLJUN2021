@@ -5,54 +5,35 @@
 # Copyright (c) 2022 My Great Learning.
 # All Rights Reserved.
 #
-# @author Drisya Mathilakath
 # @since 2022.05
 #
-import json
 import random
+
+from joblib import Parallel, delayed
+
 from apiclient import ApiClient
-import uuid
-import random
-import argparse
-import time
-from threading import Thread
+
+USER_COUNT = 1
+MAX_LATITUDE = 60
+MAX_LONGITUDE = 60
+SERVER_URI = 'http://127.0.0.1:5000'
+TAXI_TYPES = ['MINI', 'ECONOMY', 'SEDAN', 'LUXURY', 'ROYAL']
 
 
+def get_taxi_type() -> str:
+    return random.choice(TAXI_TYPES)
 
-# Initializing Parser
-parser = argparse.ArgumentParser(description='Taxi Registration')
 
-#Adding argument
-parser.add_argument('--count', type=int, help='taxi count')
-parser.add_argument('--uri', type=str, help='server uri')
-args = parser.parse_args()
+def get_license() -> str:
+    var1 = random.randint(1200, 9999)
+    var2 = random.randint(10, 99)
+    return f"KA/{var1}/{var2}"
 
-taxi_count = args.count
-server_uri = args.uri
 
-taxi_list = list()
-
-for index in range(0, taxi_count):
+taxi_clients = list()
+for index in range(0, USER_COUNT):
     name = f'taxi driver {index}'
-    license = uuid.uuid4().hex[:6].upper()
-    category = random.choice(ApiClient.taxi_types())
-    client = ApiClient(uri=server_uri, name=name, license=license, category= category)
+    client = ApiClient(uri=SERVER_URI, name=name, license=get_license(), taxi_type=get_taxi_type())
     client.register()
-    taxi_list.append(client)
-    t = Thread(target=client.login)
-    t.start()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    taxi_clients.append(client)
+Parallel(n_jobs=USER_COUNT, backend='threading')(delayed(client.run)() for client in taxi_clients)

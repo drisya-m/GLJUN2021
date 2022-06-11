@@ -1,4 +1,5 @@
 from pymongo import MongoClient
+import certifi
 
 
 class MongoDBConnection:
@@ -11,7 +12,7 @@ class MongoDBConnection:
 
     # Provide the mongodb atlas url to connect python to mongodb using pymongo
     def __enter__(self):
-        self.connection = MongoClient(self.mongo_uri)
+        self.connection = MongoClient(self.mongo_uri, tlsCAFile=certifi.where())
         self.database = self.connection[self.database_name]
         return self
 
