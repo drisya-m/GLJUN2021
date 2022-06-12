@@ -12,6 +12,8 @@ from random import uniform
 import argparse
 from src.clients.user.apiclient import ApiClient
 from threading import Thread
+from core import DatabaseDriver
+from src.functions.utils import *
 
 
 # Initializing Parser
@@ -32,18 +34,17 @@ min_longitude = args.longitude[0]
 max_longitude = args.longitude[1]
 
 
-user_list = list()
-
 for index in range(0, user_count):
     name = f'taxi user {index}'
     client = ApiClient(uri=server_uri, name=name)
     client.register()
-    user_list.append(client)
 
-for user in user_list:
-    print(user)
-    latitude, longitude = uniform(min_latitude, max_latitude), uniform(min_longitude, max_longitude)
-    t = Thread(target=client.createride, kwargs={'user_id': user, 'longitude': longitude, 'latitude': latitude})
-    t.start()
+db_driver: DatabaseDriver = get_db_driver()
+user_list: list = db_driver.list_all_users()
+print(user_list)
+# need to loop through user_list and execute below for each user_id
+latitude, longitude = uniform(min_latitude, max_latitude), uniform(min_longitude, max_longitude)
+t = Thread(target=client.createride, kwargs={'user_id': user, 'longitude': longitude, 'latitude': latitude})
+t.start()
 
 

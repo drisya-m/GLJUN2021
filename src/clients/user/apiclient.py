@@ -39,10 +39,11 @@ class ApiClient:
         payload = {"type": "user", "name": self.name}
         response = requests.request(method="POST", url=request_url, json=payload,
                                     headers={'Content-Type': 'application/json'})
+        #print(response)
         data: dict = response.json()
         self.user_id = data['user_id']
         self.secret = data['secret']
-        #print(data)
+        print(data)
         print(f'{self.name} registered with user id {self.user_id} and secret {self.secret}')
 
     def createride(self, **kwargs):
